@@ -6,13 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "ai-knowledge-assistant-backend"
 version = "0.1.0"
 description = "FastAPI backend for the AI Knowledge Assistant"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
+    "alembic>=1.13,<2.0",
     "fastapi>=0.115,<1.0",
     "pgvector>=0.4,<1.0",
+    "pydantic-settings>=2.6,<3.0",
     "psycopg[binary]>=3.2,<4.0",
-    "python-dotenv>=1.0,<2.0",
     "sqlalchemy>=2.0,<3.0",
+    "structlog>=24.4,<26.0",
     "uvicorn[standard]>=0.34,<1.0",
 ]
 

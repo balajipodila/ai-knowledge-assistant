@@ -17,7 +17,7 @@ M1 establishes the monorepo, a FastAPI health endpoint, a Next.js App Router sta
 From the repository root, create and activate a virtual environment:
 
 ```powershell
-python -m venv backend\.venv
+py -3.12 -m venv backend\.venv
 .\backend\.venv\Scripts\Activate.ps1
 python -m pip install -e "backend[dev]"
 ```
@@ -29,7 +29,15 @@ Set-Location backend
 uvicorn app.main:app --reload
 ```
 
-The health endpoint is available at `http://localhost:8000/health`. Run backend tests from `backend` with `pytest`.
+The health endpoint is available at `http://localhost:8000/health`. Run backend tests from `backend` with `python -m pytest`.
+
+Alembic migrations are reviewed before they are applied. From `backend`, generate the SQL without connecting to a database:
+
+```powershell
+python -m alembic upgrade head --sql
+```
+
+Do not apply a migration to Neon until its generated SQL has been reviewed and explicitly approved.
 
 ### Frontend
 
