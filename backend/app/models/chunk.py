@@ -13,10 +13,11 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    Uuid,
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgreSQLUUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import EMBEDDING_DIMENSION
@@ -36,6 +37,7 @@ class Chunk(Base):
             "document_id", "chunk_index", name="uq_chunks_document_chunk_index"
         ),
         CheckConstraint("chunk_index >= 0", name="ck_chunks_nonnegative_index"),
+        CheckConstraint("page_number >= 1", name="ck_chunks_positive_page_number"),
         Index("ix_chunks_user_id", "user_id"),
         Index("ix_chunks_document_id", "document_id"),
         Index(
@@ -47,15 +49,15 @@ class Chunk(Base):
     )
 
     id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
     )
     user_id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("users.id", name="fk_chunks_user_id_users", ondelete="CASCADE"),
         nullable=False,
     )
     document_id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True), nullable=False
+        Uuid(as_uuid=True), nullable=False
     )
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -64,10 +66,13 @@ class Chunk(Base):
         JSON().with_variant(JSONB(), "postgresql"),
         nullable=False,
         default=dict,
-        server_default=text("'{}'::jsonb"),
+        server_default=text("'{}'"),
     )
-    embedding: Mapped[list[float]] = mapped_column(
-        Vector(EMBEDDING_DIMENSION), nullable=False
+    page_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1
+    )
+    embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(EMBEDDING_DIMENSION).with_variant(JSON(), "sqlite"), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

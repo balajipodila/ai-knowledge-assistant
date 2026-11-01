@@ -23,3 +23,13 @@ class DocumentService:
             .order_by(Document.created_at.desc(), Document.id)
         )
         return list(session.scalars(statement).all())
+
+    def delete_document(
+        self, session: Session, *, user_id: UUID, document_id: UUID
+    ) -> Document | None:
+        document = self.get_document(session, user_id=user_id, document_id=document_id)
+        if document is None:
+            return None
+        session.delete(document)
+        session.commit()
+        return document

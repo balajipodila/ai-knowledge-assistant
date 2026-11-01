@@ -1,5 +1,3 @@
-from typing import Any
-
 import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.core.request_id import get_request_id
+from app.services.ingestion import DocumentUploadError
 
 logger = structlog.get_logger(__name__)
 
@@ -17,6 +16,8 @@ _HTTP_MESSAGES = {
     404: ("NOT_FOUND", "The requested resource was not found."),
     405: ("METHOD_NOT_ALLOWED", "The request method is not allowed."),
     409: ("CONFLICT", "The request conflicts with the current resource state."),
+    413: ("PAYLOAD_TOO_LARGE", "The uploaded file exceeds the allowed size."),
+    415: ("UNSUPPORTED_MEDIA_TYPE", "The uploaded file type is not supported."),
     429: ("TOO_MANY_REQUESTS", "Too many requests."),
     422: ("UNPROCESSABLE_ENTITY", "The request could not be processed."),
 }
@@ -40,6 +41,17 @@ def _error_response(
 
 
 def register_exception_handlers(application: FastAPI) -> None:
+    @application.exception_handler(DocumentUploadError)
+    async def handle_document_upload_error(
+        request: Request, exception: DocumentUploadError
+    ) -> JSONResponse:
+        return _error_response(
+            request,
+            exception.status_code,
+            exception.code,
+            exception.message,
+        )
+
     @application.exception_handler(HTTPException)
     async def handle_http_exception(
         request: Request, exception: HTTPException

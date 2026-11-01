@@ -29,3 +29,8 @@ def test_initial_migration_generates_reviewable_sql_offline() -> None:
     assert "vector_cosine_ops" in sql
     assert "alter table users add column password_hash varchar(255) default '' not null" in sql
     assert "alter table users alter column password_hash drop default" in sql
+    assert "alter table chunks alter column embedding drop not null" in sql
+    assert "add column page_number integer default '1' not null" in sql
+    assert "add column content_hash char(64)" in sql
+    assert "add column failure_reason text" in sql
+    assert "uq_documents_user_content_hash" in sql

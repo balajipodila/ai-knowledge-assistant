@@ -1,16 +1,30 @@
 from datetime import datetime
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, SecretStr, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    SecretStr,
+    field_validator,
+)
 
 MIN_PASSWORD_LENGTH = 12
 MAX_PASSWORD_LENGTH = 128
 
 
 class SignupRequest(BaseModel):
-    email: EmailStr
-    password: SecretStr
+    email: Annotated[EmailStr, Field(max_length=320)]
+    password: Annotated[
+        SecretStr,
+        Field(
+            min_length=MIN_PASSWORD_LENGTH,
+            max_length=MAX_PASSWORD_LENGTH,
+            description="Password must be 12 to 128 characters; it is not trimmed.",
+        ),
+    ]
 
     @field_validator("email", mode="before")
     @classmethod
@@ -30,8 +44,11 @@ class SignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
-    password: SecretStr
+    email: Annotated[EmailStr, Field(max_length=320)]
+    password: Annotated[
+        SecretStr,
+        Field(max_length=MAX_PASSWORD_LENGTH),
+    ]
 
     @field_validator("email", mode="before")
     @classmethod

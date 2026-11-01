@@ -1,14 +1,25 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 
 from app.api.router import api_router
+from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.request_id import REQUEST_ID_HEADER, create_request_id
+from app.core.tokens import validate_jwt_settings
 
 
-def create_app() -> FastAPI:
+def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging()
-    application = FastAPI(title="AI Knowledge Assistant API")
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        validate_jwt_settings(settings or get_settings())
+        yield
+
+    application = FastAPI(title="AI Knowledge Assistant API", lifespan=lifespan)
     register_exception_handlers(application)
     application.include_router(api_router)
 

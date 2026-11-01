@@ -11,8 +11,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.core.tokens import JWT_ALGORITHM
-from app.main import app
+from app.core.tokens import JWT_ALGORITHM, create_access_token
+from app.main import create_app
 from app.models.user import User
 
 TEST_SECRET = "test-only-signing-key-with-at-least-32-bytes"
@@ -42,15 +42,16 @@ def client() -> Generator[TestClient, None, None]:
         with test_session_factory() as session:
             yield session
 
-    app.dependency_overrides[get_db] = override_db
-    app.dependency_overrides[get_settings] = lambda: settings
-    app.state.test_session_factory = test_session_factory
+    application = create_app(settings=settings)
+    application.dependency_overrides[get_db] = override_db
+    application.dependency_overrides[get_settings] = lambda: settings
+    application.state.test_session_factory = test_session_factory
     try:
-        with TestClient(app) as test_client:
+        with TestClient(application) as test_client:
             yield test_client
     finally:
-        app.dependency_overrides.clear()
-        del app.state.test_session_factory
+        application.dependency_overrides.clear()
+        del application.state.test_session_factory
         engine.dispose()
 
 
@@ -103,6 +104,22 @@ def test_login_success_returns_access_token(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["access_token"]
     assert response.json()["user"]["email"] == "person@example.com"
+
+
+def test_legacy_empty_password_hash_returns_generic_login_error(
+    client: TestClient,
+) -> None:
+    _signup(client)
+    with client.app.state.test_session_factory() as session:
+        user = session.query(User).one()
+        user.password_hash = ""
+        session.commit()
+
+    response = client.post("/auth/login", json=SIGNUP_BODY)
+
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "UNAUTHORIZED"
+    assert response.json()["error"]["message"] == "Authentication is required."
 
 
 def test_login_failure_is_identical_for_unknown_email_and_bad_password(
@@ -200,6 +217,7 @@ def test_me_rejects_token_signed_with_another_secret(client: TestClient) -> None
     [
         {"email": "not-an-email", "password": "a secure password"},
         {"email": "person@example.com", "password": "short"},
+        {"email": "person@example.com", "password": "1234567890"},
         {"email": "person@example.com", "password": "x" * 129},
     ],
 )
@@ -208,3 +226,13 @@ def test_signup_validates_email_and_password(body: dict[str, str], client: TestC
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_swagger_schema_exposes_signup_validation_rules(client: TestClient) -> None:
+    schema = client.get("/openapi.json").json()
+    signup = schema["components"]["schemas"]["SignupRequest"]["properties"]
+
+    assert signup["email"]["format"] == "email"
+    assert signup["email"]["maxLength"] == 320
+    assert signup["password"]["minLength"] == 12
+    assert signup["password"]["maxLength"] == 128

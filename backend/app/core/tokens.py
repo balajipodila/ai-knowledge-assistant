@@ -15,6 +15,17 @@ def _secret(settings: Settings) -> str:
     secret = settings.jwt_secret_key.get_secret_value()
     if len(secret.encode("utf-8")) < _MIN_SECRET_BYTES:
         raise RuntimeError("JWT_SECRET_KEY must be at least 32 bytes.")
+    if any(
+        marker in secret.strip().lower()
+        for marker in (
+            "replace-with",
+            "your-secret",
+            "change-me",
+            "changeme",
+            "placeholder",
+        )
+    ):
+        raise RuntimeError("JWT_SECRET_KEY must not use a placeholder value.")
     return secret
 
 

@@ -3,14 +3,18 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     CheckConstraint,
+    CHAR,
     DateTime,
     ForeignKey,
     Index,
+    Integer,
     String,
+    Text,
+    Uuid,
     UniqueConstraint,
     func,
+    text,
 )
-from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
@@ -24,14 +28,25 @@ class Document(Base):
             "status IN ('pending', 'processing', 'ready', 'failed')",
             name="ck_documents_status",
         ),
+        CheckConstraint(
+            "page_count >= 0", name="ck_documents_nonnegative_page_count"
+        ),
         Index("ix_documents_user_created", "user_id", "created_at"),
+        Index(
+            "uq_documents_user_content_hash",
+            "user_id",
+            "content_hash",
+            unique=True,
+            postgresql_where=text("content_hash IS NOT NULL"),
+            sqlite_where=text("content_hash IS NOT NULL"),
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
     )
     user_id: Mapped[UUID] = mapped_column(
-        PostgreSQLUUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey(
             "users.id", name="fk_documents_user_id_users", ondelete="CASCADE"
         ),
@@ -39,6 +54,10 @@ class Document(Base):
     )
     filename: Mapped[str] = mapped_column(String(512), nullable=False)
     content_type: Mapped[str | None] = mapped_column(String(255))
+    content_hash: Mapped[str | None] = mapped_column(CHAR(64))
+    page_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failure_reason: Mapped[str | None] = mapped_column(Text)
+    storage_key: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(
         String(16), nullable=False, default="pending", server_default="pending"
     )
