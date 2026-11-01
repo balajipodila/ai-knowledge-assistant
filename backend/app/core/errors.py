@@ -17,6 +17,7 @@ _HTTP_MESSAGES = {
     404: ("NOT_FOUND", "The requested resource was not found."),
     405: ("METHOD_NOT_ALLOWED", "The request method is not allowed."),
     409: ("CONFLICT", "The request conflicts with the current resource state."),
+    429: ("TOO_MANY_REQUESTS", "Too many requests."),
     422: ("UNPROCESSABLE_ENTITY", "The request could not be processed."),
 }
 

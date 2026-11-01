@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     database_url: SecretStr | None = None
     app_environment: str = Field(default="development", validation_alias="APP_ENV")
     log_level: str = "INFO"
+    jwt_secret_key: SecretStr | None = None
+    jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)
     gemini_embedding_model: str = "gemini-embedding-001"
     gemini_embedding_dimension: int = Field(default=EMBEDDING_DIMENSION, ge=1)
 

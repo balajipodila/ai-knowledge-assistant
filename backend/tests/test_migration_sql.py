@@ -27,3 +27,5 @@ def test_initial_migration_generates_reviewable_sql_offline() -> None:
     assert "on delete cascade" in sql
     assert "using hnsw" in sql
     assert "vector_cosine_ops" in sql
+    assert "alter table users add column password_hash varchar(255) default '' not null" in sql
+    assert "alter table users alter column password_hash drop default" in sql

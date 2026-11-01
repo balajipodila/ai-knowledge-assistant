@@ -38,6 +38,6 @@ def test_user_scoped_schema_constraints_and_indexes() -> None:
 
 
 def test_user_email_is_normalized_before_persistence() -> None:
-    user = User(email="  EXAMPLE@EXAMPLE.COM ")
+    user = User(email="  EXAMPLE@EXAMPLE.COM ", password_hash="test-hash")
 
     assert user.email == "example@example.com"
