@@ -16,6 +16,8 @@ def test_settings_accept_python_312_default_embedding_configuration() -> None:
     assert settings.app_environment == "test"
     assert settings.gemini_embedding_model == "test-embedding-model"
     assert settings.gemini_embedding_dimension == 768
+    assert settings.search_max_top_k == 20
+    assert settings.search_min_similarity == 0.0
     assert isinstance(settings.database_url, SecretStr)
     assert "example.invalid" not in repr(settings.database_url)
 

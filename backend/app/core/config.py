@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     )
 
     database_url: SecretStr | None = None
+    test_database_url: SecretStr | None = None
     app_environment: str = Field(default="development", validation_alias="APP_ENV")
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
@@ -26,8 +27,16 @@ class Settings(BaseSettings):
     max_pdf_pages: int = Field(default=200, gt=0)
     chunk_size: int = Field(default=900, ge=100, le=4000)
     chunk_overlap: int = Field(default=150, ge=0, le=1000)
-    gemini_embedding_model: str = "gemini-embedding-001"
+    gemini_api_key: SecretStr | None = None
+    gemini_embedding_model: str = "gemini-embedding-2"
     gemini_embedding_dimension: int = Field(default=EMBEDDING_DIMENSION, ge=1)
+    embedding_batch_size: int = Field(default=16, ge=1, le=100)
+    embedding_max_attempts: int = Field(default=5, ge=1, le=10)
+    embedding_backoff_base_seconds: float = Field(default=0.5, ge=0, le=30)
+    embedding_backoff_max_seconds: float = Field(default=8, ge=0, le=120)
+    embedding_batch_delay_seconds: float = Field(default=0.1, ge=0, le=10)
+    search_max_top_k: int = Field(default=20, ge=1, le=100)
+    search_min_similarity: float = Field(default=0.0, ge=-1, le=1)
 
     @field_validator("upload_directory", mode="before")
     @classmethod

@@ -34,3 +34,8 @@ def test_initial_migration_generates_reviewable_sql_offline() -> None:
     assert "add column content_hash char(64)" in sql
     assert "add column failure_reason text" in sql
     assert "uq_documents_user_content_hash" in sql
+    assert "embedding_failed" in sql
+    assert "add column embedding_model varchar(100)" in sql
+    assert "create table embedding_cache" in sql
+    assert "vector(768)" in sql
+    assert "fk_embedding_cache_user_id_users" in sql

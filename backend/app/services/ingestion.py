@@ -4,6 +4,7 @@ import unicodedata
 from pathlib import PurePosixPath, PureWindowsPath
 
 import structlog
+from app.ai.interfaces import EmbeddingClient
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -13,6 +14,7 @@ from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.user import User
 from app.services.chunking import chunk_text
+from app.services.embeddings import EmbeddingService
 from app.services.pdf_extraction import PDFExtractionError, PDFTextExtractor
 from app.services.storage import FileStorage
 
@@ -47,11 +49,16 @@ class DocumentIngestionService:
         *,
         storage: FileStorage,
         settings: Settings,
+        embedding_client: EmbeddingClient,
         extractor: PDFTextExtractor | None = None,
     ) -> None:
         self.storage = storage
         self.settings = settings
         self.extractor = extractor or PDFTextExtractor()
+        self.embedding_service = EmbeddingService(
+            client=embedding_client,
+            settings=settings,
+        )
 
     def upload(
         self,
@@ -163,7 +170,7 @@ class DocumentIngestionService:
                     chunk_index += 1
             session.add_all(chunks)
             document.page_count = len(pages)
-            document.status = "ready"
+            document.status = "processing"
             session.commit()
         except Exception as error:
             session.rollback()
@@ -180,5 +187,11 @@ class DocumentIngestionService:
                 exception_type=type(error).__name__,
             )
             raise
-        session.refresh(document)
-        return document, len(chunks), False
+        embedded_document = self.embedding_service.embed_document(
+            session,
+            document_id=document.id,
+            user_id=user.id,
+        )
+        if embedded_document is None:
+            raise RuntimeError("The uploaded document disappeared during embedding.")
+        return embedded_document, len(chunks), False

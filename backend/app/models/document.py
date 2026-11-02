@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -19,13 +20,17 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
+if TYPE_CHECKING:
+    from app.models.chunk import Chunk
+    from app.models.user import User
+
 
 class Document(Base):
     __tablename__ = "documents"
     __table_args__ = (
         UniqueConstraint("id", "user_id", name="uq_documents_id_user_id"),
         CheckConstraint(
-            "status IN ('pending', 'processing', 'ready', 'failed')",
+            "status IN ('pending', 'processing', 'ready', 'failed', 'embedding_failed')",
             name="ck_documents_status",
         ),
         CheckConstraint(

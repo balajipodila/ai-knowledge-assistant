@@ -1,9 +1,11 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.document import Document
+from app.models.embedding_cache import EmbeddingCache
+from app.services.embeddings import document_embedding_cache_hash
 
 
 class DocumentService:
@@ -30,6 +32,17 @@ class DocumentService:
         document = self.get_document(session, user_id=user_id, document_id=document_id)
         if document is None:
             return None
+        content_hashes = {
+            document_embedding_cache_hash(document.filename, chunk.content)
+            for chunk in document.chunks
+        }
+        if content_hashes:
+            session.execute(
+                delete(EmbeddingCache).where(
+                    EmbeddingCache.user_id == user_id,
+                    EmbeddingCache.content_hash.in_(content_hashes),
+                )
+            )
         session.delete(document)
         session.commit()
         return document

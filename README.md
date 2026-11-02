@@ -8,8 +8,8 @@ A local-first RAG web app for uploading PDFs, searching personal documents, and 
 2. **M2 — Backend foundation:** Python 3.12, application configuration, database models and migrations, safe API errors, AI interfaces and test fakes.
 3. **M3 — Authentication:** email/password signup and login, JWT access tokens, and authenticated current-user dependency.
 4. **M4 — PDF upload and ingestion:** validate uploads, extract document text and page metadata, and track processing state.
-5. **M5 — Embeddings:** chunk extracted text and generate/store embeddings with the configured provider.
-6. **M6 — Vector retrieval:** user-scoped similarity search over document chunks.
+5. **M5 — Embeddings and vector search:** generate/store embeddings and search ready document chunks with user-scoped cosine similarity.
+6. **M6 — Retrieval tuning:** evaluate and improve search relevance over user-scoped document chunks.
 7. **M7 — Cited chat:** answer questions from retrieved context with source/page citations.
 8. **M8 — Frontend workflows:** authentication, document management, upload progress, search and chat UI.
 9. **M9 — Security, reliability and deployment:** operational hardening, observability, deployment configuration and recovery.
@@ -71,6 +71,60 @@ Defaults are 10 MiB maximum file size, 200 pages, 900-character chunks and
 `CHUNK_SIZE`, and `CHUNK_OVERLAP`. Local files live under `.local/uploads/`
 (ignored by Git). Scanned PDFs without selectable text are marked failed;
 OCR is not part of M4.
+
+### Embeddings and vector search (M5)
+
+The current Gemini Embedding 2 model is configured by `GEMINI_EMBEDDING_MODEL`
+and `GEMINI_EMBEDDING_DIMENSION`; the project defaults to 768 dimensions to
+match the existing `VECTOR(768)` column. Configure `GEMINI_API_KEY` in the
+root `.env` file. The API does not fail to start without this key, but document
+embeddings will remain retryable and search will be unavailable until it is
+configured. Batches default to 16 inputs, retry transient provider failures
+with bounded exponential backoff, and persist user-scoped cache entries.
+
+`POST /documents/{id}/retry-embedding` retries only chunks that lack an
+embedding. `POST /search` accepts `{"query":"...","top_k":5}` and returns
+user-scoped, cosine-ranked chunks from ready documents. `SEARCH_MAX_TOP_K`
+defaults to 20; `SEARCH_MIN_SIMILARITY` defaults to 0.0. The M2 cosine HNSW
+index is reused. Embedding failures preserve the uploaded file and extracted
+chunks and mark the document `embedding_failed`.
+
+The M5 migration changes document status validation, adds chunk model
+provenance, and creates the embedding cache. Generate its SQL for review before
+any database change:
+
+```powershell
+Set-Location backend
+python -m alembic upgrade head --sql
+```
+
+Vector integration tests use only `TEST_DATABASE_URL`, which must point to a
+disposable PostgreSQL + pgvector database with the approved migrations already
+applied. They refuse to run if it resolves to the same database as
+`DATABASE_URL`, and skip with a clear message if it is absent. The suite does
+not apply migrations or DDL automatically. Run SQLite/fake-based tests with:
+
+```powershell
+python -m pytest -m "not postgres_vector"
+```
+
+After separately approving and preparing the disposable test database, run
+vector tests with:
+
+```powershell
+python -m pytest -m postgres_vector
+```
+
+For an optional manual Gemini smoke test, start the API with the local
+`.env` configuration and use a small synthetic PDF:
+
+```powershell
+python .\scripts\gemini_smoke.py --pdf C:\path\to\synthetic.pdf
+```
+
+The script prompts for login credentials and a search query without printing
+credentials or API keys. **Do not upload personal documents while testing with
+the real Gemini API.**
 
 Alembic migrations are reviewed before they are applied. From `backend`, generate the SQL without connecting to a database:
 

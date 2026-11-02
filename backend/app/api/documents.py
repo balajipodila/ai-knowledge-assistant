@@ -12,12 +12,15 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
+from app.ai.dependencies import get_embedding_client
+from app.ai.interfaces import EmbeddingClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.models.user import User
 from app.schemas.documents import DocumentResponse, DocumentUploadResponse
 from app.services.documents import DocumentService
+from app.services.embeddings import EmbeddingService
 from app.services.ingestion import DocumentIngestionService, DocumentUploadError
 from app.services.storage import LocalFileStorage
 
@@ -35,6 +38,7 @@ async def upload_document(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
+    embedding_client: Annotated[EmbeddingClient, Depends(get_embedding_client)],
     response: Response,
 ) -> DocumentUploadResponse:
     data = await file.read(settings.max_upload_size_bytes + 1)
@@ -45,6 +49,7 @@ async def upload_document(
     document, chunk_count, duplicate = DocumentIngestionService(
         storage=LocalFileStorage(settings.upload_directory),
         settings=settings,
+        embedding_client=embedding_client,
     ).upload(
         session,
         user=user,
@@ -64,6 +69,39 @@ async def upload_document(
         chunk_count=chunk_count,
         duplicate=duplicate,
     )
+
+
+@router.post("/{document_id}/retry-embedding", response_model=DocumentResponse)
+def retry_document_embedding(
+    document_id: UUID,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[Session, Depends(get_db)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    embedding_client: Annotated[EmbeddingClient, Depends(get_embedding_client)],
+) -> DocumentResponse:
+    document_service = DocumentService()
+    document = document_service.get_document(
+        session, user_id=user.id, document_id=document_id
+    )
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    if document.status != "embedding_failed":
+        raise HTTPException(
+            status_code=409,
+            detail="This document does not need an embedding retry.",
+        )
+
+    updated = EmbeddingService(
+        client=embedding_client,
+        settings=settings,
+    ).embed_document(
+        session,
+        document_id=document.id,
+        user_id=user.id,
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+    return DocumentResponse.model_validate(updated)
 
 
 @router.get("", response_model=list[DocumentResponse])

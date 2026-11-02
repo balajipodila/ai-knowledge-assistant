@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from pgvector.sqlalchemy import Vector
@@ -22,6 +23,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.constants import EMBEDDING_DIMENSION
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from app.models.document import Document
 
 
 class Chunk(Base):
@@ -74,6 +78,7 @@ class Chunk(Base):
     embedding: Mapped[list[float] | None] = mapped_column(
         Vector(EMBEDDING_DIMENSION).with_variant(JSON(), "sqlite"), nullable=True
     )
+    embedding_model: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -19,6 +19,7 @@ _HTTP_MESSAGES = {
     413: ("PAYLOAD_TOO_LARGE", "The uploaded file exceeds the allowed size."),
     415: ("UNSUPPORTED_MEDIA_TYPE", "The uploaded file type is not supported."),
     429: ("TOO_MANY_REQUESTS", "Too many requests."),
+    503: ("SERVICE_UNAVAILABLE", "The service is temporarily unavailable."),
     422: ("UNPROCESSABLE_ENTITY", "The request could not be processed."),
 }
 

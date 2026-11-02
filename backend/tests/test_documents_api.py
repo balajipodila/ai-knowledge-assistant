@@ -11,12 +11,15 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.ai.dependencies import get_embedding_client
+from app.ai.errors import EmbeddingProviderError
+from app.ai.fakes import FakeEmbeddingClient
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.passwords import hash_password
 from app.core.tokens import create_access_token
 from app.main import create_app
-from app.models import Base, Chunk, Document, User
+from app.models import Base, Chunk, Document, EmbeddingCache, User
 
 _TEST_SECRET = "test-only-signing-key-with-at-least-32-bytes"
 
@@ -50,14 +53,15 @@ def document_client(tmp_path: Path) -> Generator[dict[str, Any], None, None]:
         session.commit()
         owner_id = user.id
 
-    settings = Settings(
-        _env_file=None,
-        JWT_SECRET_KEY=_TEST_SECRET,
-        upload_directory=tmp_path / "uploads",
-        max_upload_size_bytes=4096,
-        max_pdf_pages=2,
-        chunk_size=180,
-        chunk_overlap=30,
+    settings = Settings.model_validate(
+        {
+            "jwt_secret_key": _TEST_SECRET,
+            "upload_directory": tmp_path / "uploads",
+            "max_upload_size_bytes": 4096,
+            "max_pdf_pages": 2,
+            "chunk_size": 180,
+            "chunk_overlap": 30,
+        }
     )
     application = create_app(settings=settings)
 
@@ -67,6 +71,8 @@ def document_client(tmp_path: Path) -> Generator[dict[str, Any], None, None]:
 
     application.dependency_overrides[get_db] = override_db
     application.dependency_overrides[get_settings] = lambda: settings
+    embedding_client = FakeEmbeddingClient()
+    application.dependency_overrides[get_embedding_client] = lambda: embedding_client
     token = create_access_token(owner_id, settings)
     try:
         with TestClient(application) as client:
@@ -76,6 +82,8 @@ def document_client(tmp_path: Path) -> Generator[dict[str, Any], None, None]:
                 "factory": factory,
                 "owner_id": owner_id,
                 "settings": settings,
+                "embedding_client": embedding_client,
+                "application": application,
             }
     finally:
         application.dependency_overrides.clear()
@@ -129,7 +137,11 @@ def test_valid_upload_extracts_text_and_stores_page_chunks(
         document = session.get(Document, document_id)
     assert document.content_hash
     assert document.storage_key
-    assert all(chunk.embedding is None for chunk in chunks)
+    assert all(chunk.embedding is not None for chunk in chunks)
+    assert all(
+        chunk.embedding_model == document_client["settings"].gemini_embedding_model
+        for chunk in chunks
+    )
     assert {chunk.page_number for chunk in chunks} == {1, 2}
     assert [chunk.chunk_index for chunk in chunks] == list(range(len(chunks)))
     assert all(len(chunk.content) <= 180 for chunk in chunks)
@@ -233,6 +245,53 @@ def test_duplicate_upload_returns_existing_document(
     assert len(files) == 1
 
 
+def test_embedding_failure_preserves_upload_and_retry_completes_it(
+    document_client: dict[str, Any],
+) -> None:
+    document_client["settings"].embedding_max_attempts = 1
+
+    class UnavailableEmbeddingClient(FakeEmbeddingClient):
+        def embed_many(self, texts: list[str]) -> list[list[float]]:
+            del texts
+            raise EmbeddingProviderError(
+                "Gemini embedding service is temporarily unavailable.",
+                retryable=True,
+            )
+
+    document_client["application"].dependency_overrides[get_embedding_client] = (
+        UnavailableEmbeddingClient
+    )
+    response = _upload(document_client, _pdf_bytes(["Keep this upload."]))
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["status"] == "embedding_failed"
+    assert payload["failure_reason"] == (
+        "Gemini embedding service is temporarily unavailable."
+    )
+    document_id = UUID(payload["id"])
+    with document_client["factory"]() as session:
+        chunks = session.scalars(
+            select(Chunk).where(Chunk.document_id == document_id)
+        ).all()
+        document = session.get(Document, document_id)
+    assert len(chunks) == payload["chunk_count"]
+    assert all(chunk.embedding is None for chunk in chunks)
+    assert document is not None
+    assert document.storage_key is not None
+    assert (document_client["settings"].upload_directory / document.storage_key).exists()
+
+    document_client["application"].dependency_overrides[get_embedding_client] = (
+        lambda: document_client["embedding_client"]
+    )
+    retry = document_client["client"].post(
+        f"/documents/{document_id}/retry-embedding",
+        headers=document_client["headers"],
+    )
+    assert retry.status_code == 200
+    assert retry.json()["status"] == "ready"
+
+
 def test_listing_only_returns_the_current_users_documents(
     document_client: dict[str, Any],
 ) -> None:
@@ -319,6 +378,11 @@ def test_delete_removes_document_chunks_and_stored_file(
         assert session.scalars(
             select(Chunk).where(Chunk.document_id == document_id)
         ).all() == []
+        assert session.scalar(
+            select(EmbeddingCache).where(
+                EmbeddingCache.user_id == document_client["owner_id"]
+            )
+        ) is None
 
 
 def test_upload_requires_authentication(document_client: dict[str, Any]) -> None:
