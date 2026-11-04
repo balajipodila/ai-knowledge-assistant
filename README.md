@@ -209,6 +209,20 @@ npm run dev
 
 Run its basic UI tests with `npm test` and create a production build with `npm run build`.
 
+The F1 authentication pages use `NEXT_PUBLIC_API_URL` (default
+`http://localhost:8000`) to reach the backend. Access tokens are kept in
+`sessionStorage` with their expiry time; they are cleared at expiry or after a
+401 response, and there is no refresh token. `sessionStorage` is accessible to
+JavaScript, so an XSS vulnerability could expose the token. A stronger future
+option is a Next.js backend-for-frontend that keeps tokens in `httpOnly`,
+`Secure`, `SameSite` cookies and adds CSRF protection. The browser has not yet
+been used to verify this milestone.
+
+The backend permits the explicit local frontend origins
+`http://localhost:3000` and `http://127.0.0.1:3000`; configure additional
+origins with `CORS_ORIGINS` in the backend environment. Wildcard origins are
+rejected.
+
 ### Neon and pgvector
 
 Copy `.env.example` to `.env` and set `DATABASE_URL` to the connection URL shown by Neon. Keep `.env` private; it is ignored by Git. Then, from `backend`, run:
