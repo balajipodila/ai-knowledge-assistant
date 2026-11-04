@@ -1,4 +1,5 @@
 from functools import lru_cache
+from ipaddress import ip_network
 from pathlib import Path
 
 from pydantic import Field, SecretStr, field_validator, model_validator
@@ -24,6 +25,7 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
     )
+    trusted_proxy_cidrs: list[str] = Field(default_factory=list)
     app_environment: str = Field(default="development", validation_alias="APP_ENV")
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
@@ -54,6 +56,17 @@ class Settings(BaseSettings):
     chat_max_attempts: int = Field(default=3, ge=1, le=5)
     chat_backoff_base_seconds: float = Field(default=0.5, ge=0, le=30)
     chat_backoff_max_seconds: float = Field(default=4, ge=0, le=120)
+    rate_limit_cleanup_interval_seconds: int = Field(default=60, ge=1, le=3600)
+    chat_requests_per_minute: int = Field(default=5, ge=1, le=10000)
+    chat_requests_per_day: int = Field(default=100, ge=1, le=1000000)
+    chat_concurrent_requests_per_user: int = Field(default=2, ge=1, le=100)
+    upload_requests_per_minute: int = Field(default=3, ge=1, le=10000)
+    upload_requests_per_day: int = Field(default=20, ge=1, le=1000000)
+    search_requests_per_minute: int = Field(default=20, ge=1, le=10000)
+    search_requests_per_day: int = Field(default=500, ge=1, le=1000000)
+    auth_email_attempts_per_minute: int = Field(default=5, ge=1, le=10000)
+    auth_ip_attempts_per_minute: int = Field(default=20, ge=1, le=100000)
+    max_documents_per_user: int = Field(default=25, ge=1, le=100000)
 
     @field_validator("upload_directory", mode="before")
     @classmethod
@@ -70,6 +83,14 @@ class Settings(BaseSettings):
         if any("://" not in origin or "/" in origin.split("://", 1)[1] for origin in normalized):
             raise ValueError("CORS_ORIGINS entries must be origins without paths.")
         return normalized
+
+    @field_validator("trusted_proxy_cidrs")
+    @classmethod
+    def trusted_proxy_entries_must_be_networks(cls, cidrs: list[str]) -> list[str]:
+        try:
+            return [str(ip_network(cidr, strict=False)) for cidr in cidrs]
+        except ValueError as error:
+            raise ValueError("TRUSTED_PROXY_CIDRS must contain valid IP networks.") from error
 
     @model_validator(mode="after")
     def embedding_dimension_matches_schema(self) -> "Settings":

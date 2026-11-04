@@ -5,7 +5,7 @@ from pathlib import PurePosixPath, PureWindowsPath
 
 import structlog
 from app.ai.interfaces import EmbeddingClient
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -96,6 +96,9 @@ class DocumentIngestionService:
             )
 
         content_hash = hashlib.sha256(data).hexdigest()
+        session.execute(
+            select(User.id).where(User.id == user.id).with_for_update()
+        ).scalar_one()
         existing = session.scalar(
             select(Document).where(
                 Document.user_id == user.id,
@@ -104,6 +107,16 @@ class DocumentIngestionService:
         )
         if existing is not None:
             return existing, len(existing.chunks), True
+
+        document_count = session.scalar(
+            select(func.count(Document.id)).where(Document.user_id == user.id)
+        )
+        if (document_count or 0) >= self.settings.max_documents_per_user:
+            raise DocumentUploadError(
+                409,
+                "DOCUMENT_LIMIT_REACHED",
+                "You have reached the maximum number of documents for this account.",
+            )
 
         storage_key = self.storage.save(data)
         document = Document(

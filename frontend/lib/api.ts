@@ -8,18 +8,21 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly fields: ApiErrorFields;
+  readonly retryAfterSeconds?: number;
 
   constructor(
     message: string,
     status: number,
     code: string,
     fields: ApiErrorFields = {},
+    retryAfterSeconds?: number,
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -63,8 +66,13 @@ function validationFields(detail: unknown): ApiErrorFields {
   return fields;
 }
 
-function friendlyError(status: number, code: string): string {
+function friendlyError(
+  status: number,
+  code: string,
+  retryAfterSeconds?: number,
+): string {
   const documentUploadErrors: Record<string, string> = {
+    DOCUMENT_LIMIT_REACHED: "You have reached the document limit. Delete a document before uploading another.",
     UNSUPPORTED_FILE_EXTENSION: "Only PDF files are accepted.",
     UNSUPPORTED_MEDIA_TYPE: "The selected file must be a PDF.",
     EMPTY_FILE: "The selected PDF is empty.",
@@ -80,7 +88,13 @@ function friendlyError(status: number, code: string): string {
   if (status === 401) return "Email or password is incorrect.";
   if (status === 409) return "An account with this email already exists.";
   if (status === 422) return "Check the highlighted fields and try again.";
-  if (status === 429) return "The service is busy. Please try again in a minute.";
+  if (status === 429) {
+    if (retryAfterSeconds !== undefined) {
+      const unit = retryAfterSeconds === 1 ? "second" : "seconds";
+      return `The service is busy. Please try again in ${retryAfterSeconds} ${unit}.`;
+    }
+    return "The service is busy. Please try again in a minute.";
+  }
   if (status === 503 || status >= 500) {
     return "The service is temporarily unavailable. Please try again shortly.";
   }
@@ -153,11 +167,20 @@ export async function apiRequest<T>(
       const error = payload.error;
       const code =
         typeof error?.code === "string" ? error.code : "REQUEST_FAILED";
+      const retryAfterHeader = response.headers?.get("Retry-After");
+      const retryAfterValue = retryAfterHeader
+        ? Number(retryAfterHeader)
+        : Number.NaN;
+      const retryAfterSeconds =
+        Number.isFinite(retryAfterValue) && retryAfterValue > 0
+          ? Math.ceil(retryAfterValue)
+          : undefined;
       throw new ApiError(
-        friendlyError(response.status, code),
+        friendlyError(response.status, code, retryAfterSeconds),
         response.status,
         code,
         validationFields(payload.detail),
+        retryAfterSeconds,
       );
     }
 

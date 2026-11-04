@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.rate_limits import enforce_auth_attempt
 from app.core.tokens import create_access_token, validate_jwt_settings
 from app.models.user import User
 from app.schemas.auth import AuthResponse, LoginRequest, SignupRequest, UserResponse
@@ -24,10 +25,17 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
     status_code=status.HTTP_201_CREATED,
 )
 def signup(
+    http_request: Request,
     request: SignupRequest,
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthResponse:
+    enforce_auth_attempt(
+        http_request,
+        email=str(request.email),
+        action="signup",
+        settings=settings,
+    )
     validate_jwt_settings(settings)
     try:
         user = AuthService().signup(
@@ -46,10 +54,17 @@ def signup(
 
 @router.post("/login", response_model=AuthResponse)
 def login(
+    http_request: Request,
     request: LoginRequest,
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AuthResponse:
+    enforce_auth_attempt(
+        http_request,
+        email=str(request.email),
+        action="login",
+        settings=settings,
+    )
     validate_jwt_settings(settings)
     try:
         user = AuthService().login(

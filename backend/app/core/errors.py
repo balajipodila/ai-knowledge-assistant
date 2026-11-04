@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.core.request_id import get_request_id
+from app.core.rate_limits import RateLimitExceeded
 from app.services.chat import ChatError
 from app.services.ingestion import DocumentUploadError
 
@@ -26,9 +27,14 @@ _HTTP_MESSAGES = {
 
 
 def _error_response(
-    request: Request, status_code: int, code: str, message: str
+    request: Request,
+    status_code: int,
+    code: str,
+    message: str,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     request_id = get_request_id(request)
+    response_headers = {**(headers or {}), "X-Request-ID": request_id}
     return JSONResponse(
         status_code=status_code,
         content={
@@ -38,7 +44,7 @@ def _error_response(
                 "request_id": request_id,
             }
         },
-        headers={"X-Request-ID": request_id},
+        headers=response_headers,
     )
 
 
@@ -61,6 +67,18 @@ def register_exception_handlers(application: FastAPI) -> None:
             exception.status_code,
             exception.code,
             exception.message,
+        )
+
+    @application.exception_handler(RateLimitExceeded)
+    async def handle_rate_limit_error(
+        request: Request, exception: RateLimitExceeded
+    ) -> JSONResponse:
+        return _error_response(
+            request,
+            429,
+            exception.code,
+            exception.message,
+            headers={"Retry-After": str(exception.retry_after_seconds)},
         )
 
     @application.exception_handler(HTTPException)

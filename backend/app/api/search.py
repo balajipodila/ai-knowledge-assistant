@@ -9,6 +9,7 @@ from app.ai.interfaces import EmbeddingClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.rate_limits import search_rate_limit
 from app.models.user import User
 from app.schemas.search import SearchRequest, SearchResponse, SearchResult
 from app.services.embeddings import EmbeddingService
@@ -24,6 +25,7 @@ def search_documents(
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
     embedding_client: Annotated[EmbeddingClient, Depends(get_embedding_client)],
+    _rate_limit: Annotated[None, Depends(search_rate_limit)],
 ) -> SearchResponse:
     if request.top_k > settings.search_max_top_k:
         raise HTTPException(

@@ -17,6 +17,7 @@ from app.ai.interfaces import EmbeddingClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.rate_limits import upload_rate_limit
 from app.models.user import User
 from app.schemas.documents import DocumentResponse, DocumentUploadResponse
 from app.services.documents import DocumentService
@@ -40,6 +41,7 @@ async def upload_document(
     settings: Annotated[Settings, Depends(get_settings)],
     embedding_client: Annotated[EmbeddingClient, Depends(get_embedding_client)],
     response: Response,
+    _rate_limit: Annotated[None, Depends(upload_rate_limit)],
 ) -> DocumentUploadResponse:
     data = await file.read(settings.max_upload_size_bytes + 1)
     if len(data) > settings.max_upload_size_bytes:

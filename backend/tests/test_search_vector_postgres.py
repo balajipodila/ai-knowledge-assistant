@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from math import sqrt
+import os
 from typing import Protocol, cast
 from uuid import UUID, uuid4
 
@@ -56,18 +57,13 @@ def _same_database(first: str, second: str) -> bool:
 
 @pytest.fixture(scope="module")
 def postgres_factory() -> Generator[sessionmaker[Session], None, None]:
-    settings = Settings()
-    if settings.test_database_url is None:
+    test_url = os.environ.get("TEST_DATABASE_URL")
+    if not test_url:
         pytest.skip(
             "Vector search integration tests skipped: TEST_DATABASE_URL is not set."
         )
 
-    test_url = settings.test_database_url.get_secret_value()
-    main_url = (
-        settings.database_url.get_secret_value()
-        if settings.database_url is not None
-        else None
-    )
+    main_url = os.environ.get("DATABASE_URL")
     if main_url is not None and _same_database(test_url, main_url):
         pytest.fail(
             "TEST_DATABASE_URL resolves to DATABASE_URL; refusing to run vector tests.",

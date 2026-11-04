@@ -34,7 +34,9 @@ def test_cors_preflight_allows_configured_frontend_origin() -> None:
         "/health",
         headers={"Origin": "http://localhost:3000"},
     )
-    assert actual_response.headers["Access-Control-Expose-Headers"] == "X-Request-ID"
+    exposed_headers = actual_response.headers["Access-Control-Expose-Headers"]
+    assert "X-Request-ID" in exposed_headers
+    assert "Retry-After" in exposed_headers
     assert actual_response.headers["X-Request-ID"]
 
 

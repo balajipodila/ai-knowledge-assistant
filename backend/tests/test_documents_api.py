@@ -148,6 +148,24 @@ def test_valid_upload_extracts_text_and_stores_page_chunks(
     assert (document_client["settings"].upload_directory / document.storage_key).exists()
 
 
+def test_document_cap_allows_duplicate_but_rejects_a_new_document(
+    document_client: dict[str, Any],
+) -> None:
+    document_client["settings"].max_documents_per_user = 1
+    first_pdf = _pdf_bytes(["First document contents."])
+    second_pdf = _pdf_bytes(["Different document contents."])
+
+    first = _upload(document_client, first_pdf, filename="first.pdf")
+    duplicate = _upload(document_client, first_pdf, filename="first-copy.pdf")
+    over_limit = _upload(document_client, second_pdf, filename="second.pdf")
+
+    assert first.status_code == 201
+    assert duplicate.status_code == 200
+    assert duplicate.json()["duplicate"] is True
+    assert over_limit.status_code == 409
+    assert over_limit.json()["error"]["code"] == "DOCUMENT_LIMIT_REACHED"
+
+
 @pytest.mark.parametrize(
     ("filename", "content_type", "content", "expected_code"),
     [

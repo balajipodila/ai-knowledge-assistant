@@ -3,11 +3,16 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiRequest, SESSION_EXPIRED_EVENT } from "./api";
 import { saveSession } from "./session";
 
-function response(status: number, body: unknown): Response {
+function response(
+  status: number,
+  body: unknown,
+  headers: Record<string, string> = {},
+): Response {
   return {
     status,
     ok: status >= 200 && status < 300,
     json: async () => body,
+    headers: new Headers(headers),
   } as Response;
 }
 
@@ -75,11 +80,16 @@ describe("typed API client", () => {
     });
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
-      response(429, { error: { code: "TOO_MANY_REQUESTS" } }),
+      response(
+        429,
+        { error: { code: "TOO_MANY_REQUESTS" } },
+        { "Retry-After": "17" },
+      ),
     );
     await expect(apiRequest("/chat")).rejects.toMatchObject({
       status: 429,
-      message: "The service is busy. Please try again in a minute.",
+      message: "The service is busy. Please try again in 17 seconds.",
+      retryAfterSeconds: 17,
     });
 
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
