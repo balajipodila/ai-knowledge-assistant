@@ -64,6 +64,19 @@ function validationFields(detail: unknown): ApiErrorFields {
 }
 
 function friendlyError(status: number, code: string): string {
+  const documentUploadErrors: Record<string, string> = {
+    UNSUPPORTED_FILE_EXTENSION: "Only PDF files are accepted.",
+    UNSUPPORTED_MEDIA_TYPE: "The selected file must be a PDF.",
+    EMPTY_FILE: "The selected PDF is empty.",
+    FILE_TOO_LARGE: "The PDF exceeds the server's configured size limit.",
+    INVALID_PDF_SIGNATURE: "The file does not appear to be a valid PDF.",
+    PDF_ENCRYPTED: "Password-protected PDFs are not supported.",
+    PDF_EMPTY: "The PDF does not contain any pages.",
+    PDF_TOO_MANY_PAGES: "The PDF exceeds the server's page limit.",
+    PDF_INVALID: "The uploaded file is not a readable PDF.",
+    PDF_NO_TEXT: "No selectable text was found in the PDF. Scanned PDFs are not supported yet.",
+  };
+  if (documentUploadErrors[code]) return documentUploadErrors[code];
   if (status === 401) return "Email or password is incorrect.";
   if (status === 409) return "An account with this email already exists.";
   if (status === 422) return "Check the highlighted fields and try again.";

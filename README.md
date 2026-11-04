@@ -223,6 +223,14 @@ The backend permits the explicit local frontend origins
 origins with `CORS_ORIGINS` in the backend environment. Wildcard origins are
 rejected.
 
+The protected `/documents` page uploads PDFs, lists the signed-in user's
+documents, and supports deletion and retrying failed embeddings. The browser
+checks the PDF extension, signature, and the backend's default 10 MiB upload
+limit before upload. The server setting can be overridden, so update the
+frontend limit in `frontend/components/documents-manager.tsx` to match if you
+change `MAX_UPLOAD_SIZE_BYTES`. Upload and embedding run synchronously on the
+backend; the frontend allows up to two minutes for upload requests.
+
 ### Neon and pgvector
 
 Copy `.env.example` to `.env` and set `DATABASE_URL` to the connection URL shown by Neon. Keep `.env` private; it is ignored by Git. Then, from `backend`, run:
