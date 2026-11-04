@@ -6,13 +6,13 @@ from uuid import UUID, uuid4
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, delete, select
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.ai.dependencies import get_embedding_client
-from app.ai.fakes import FakeEmbeddingClient
+from app.ai.dependencies import get_embedding_client, get_llm_client
+from app.ai.fakes import FakeEmbeddingClient, FakeLLMClient
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.passwords import hash_password
@@ -277,4 +277,97 @@ def test_search_filters_owner_status_threshold_and_top_k(
                 select(User).where(User.id.in_([owner_id, other_owner_id]))
             ).all():
                 session.delete(user)
+            session.commit()
+
+
+def test_chat_does_not_reveal_another_users_document(
+    postgres_factory: sessionmaker[Session],
+) -> None:
+    settings = Settings.model_validate(
+        {
+            "jwt_secret_key": _TEST_SECRET,
+            "search_min_similarity": 0.0,
+            "chat_max_context_chunks": 5,
+        }
+    )
+    owner_a_id = uuid4()
+    owner_b_id = uuid4()
+    document_id = uuid4()
+    embedding = [1.0, *([0.0] * 767)]
+    llm_client = FakeLLMClient("Private content [1].")
+    application = create_app(settings=settings)
+
+    def override_db() -> Generator[Session, None, None]:
+        with postgres_factory() as session:
+            yield session
+
+    application.dependency_overrides[get_db] = override_db
+    application.dependency_overrides[get_settings] = lambda: settings
+    application.dependency_overrides[get_embedding_client] = (
+        FixedQueryEmbeddingClient
+    )
+    application.dependency_overrides[get_llm_client] = lambda: llm_client
+    try:
+        with postgres_factory() as session:
+            session.add_all(
+                [
+                    User(
+                        id=owner_a_id,
+                        email=f"{owner_a_id}@example.test",
+                        password_hash=hash_password("test password"),
+                    ),
+                    User(
+                        id=owner_b_id,
+                        email=f"{owner_b_id}@example.test",
+                        password_hash=hash_password("test password"),
+                    ),
+                ]
+            )
+            session.flush()
+            document_id = _add_document(
+                session,
+                owner_id=owner_a_id,
+                filename="private.pdf",
+                status="ready",
+                content="Private user A content.",
+                embedding=embedding,
+            )
+            session.commit()
+
+        with TestClient(application) as test_client:
+            client = cast(SearchHttpClient, test_client)
+            headers = {
+                "Authorization": f"Bearer {create_access_token(owner_b_id, settings)}"
+            }
+            without_filter = client.post(
+                "/chat",
+                json={"question": "What is in my documents?"},
+                headers=headers,
+            )
+            with_foreign_filter = client.post(
+                "/chat",
+                json={
+                    "question": "What is in my documents?",
+                    "document_ids": [str(document_id)],
+                },
+                headers=headers,
+            )
+
+        assert without_filter.status_code == 200
+        assert with_foreign_filter.status_code == 200
+        assert without_filter.json() == with_foreign_filter.json()
+        assert without_filter.json() == {
+            "answer": "I could not find this in your documents.",
+            "citations": [],
+        }
+        assert llm_client.prompts == []
+    finally:
+        application.dependency_overrides.clear()
+        with postgres_factory() as session:
+            session.execute(
+                delete(Document).where(Document.id == document_id)
+            )
+            session.execute(
+                delete(User).where(User.id.in_([owner_a_id, owner_b_id]))
+            )
             session.commit()

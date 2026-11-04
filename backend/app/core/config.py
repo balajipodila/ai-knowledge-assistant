@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     embedding_batch_delay_seconds: float = Field(default=0.1, ge=0, le=10)
     search_max_top_k: int = Field(default=20, ge=1, le=100)
     search_min_similarity: float = Field(default=0.0, ge=-1, le=1)
+    gemini_chat_model: str = "gemini-3.8-flash"
+    chat_max_output_tokens: int = Field(default=2048, ge=1, le=65536)
+    chat_timeout_seconds: int = Field(default=30, ge=1, le=300)
+    chat_max_question_chars: int = Field(default=2000, ge=1, le=4000)
+    chat_max_context_chunks: int = Field(default=5, ge=1, le=20)
+    chat_max_context_chars: int = Field(default=12000, ge=256, le=100000)
+    chat_max_attempts: int = Field(default=3, ge=1, le=5)
+    chat_backoff_base_seconds: float = Field(default=0.5, ge=0, le=30)
+    chat_backoff_max_seconds: float = Field(default=4, ge=0, le=120)
 
     @field_validator("upload_directory", mode="before")
     @classmethod
@@ -57,6 +66,15 @@ class Settings(BaseSettings):
     def chunk_overlap_is_smaller_than_chunk_size(self) -> "Settings":
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("CHUNK_OVERLAP must be smaller than CHUNK_SIZE.")
+        return self
+
+    @model_validator(mode="after")
+    def chat_backoff_max_is_not_smaller_than_base(self) -> "Settings":
+        if self.chat_backoff_max_seconds < self.chat_backoff_base_seconds:
+            raise ValueError(
+                "CHAT_BACKOFF_MAX_SECONDS must be at least "
+                "CHAT_BACKOFF_BASE_SECONDS."
+            )
         return self
 
 

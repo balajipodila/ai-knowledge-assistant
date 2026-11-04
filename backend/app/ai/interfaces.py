@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class LLMClient(ABC):
     @abstractmethod
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, *, system_instruction: str = "") -> str:
         raise NotImplementedError
 
 

@@ -1,10 +1,37 @@
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+
 from google import genai
 from google.genai import errors, types
 import httpx
 
-from app.ai.errors import EmbeddingProviderError
-from app.ai.interfaces import EmbeddingClient
+from app.ai.errors import (
+    EmbeddingProviderError,
+    LLMOutputTruncatedError,
+    LLMProviderError,
+)
+from app.ai.interfaces import EmbeddingClient, LLMClient
 from app.core.config import Settings
+
+
+def _retry_after_seconds(error: errors.APIError) -> float | None:
+    headers = getattr(error.response, "headers", None)
+    if not headers:
+        return None
+
+    value = headers.get("Retry-After") or headers.get("retry-after")
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        try:
+            retry_at = parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+        if retry_at.tzinfo is None:
+            retry_at = retry_at.replace(tzinfo=timezone.utc)
+        return max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
 
 
 class GeminiEmbeddingClient(EmbeddingClient):
@@ -74,5 +101,62 @@ class GeminiEmbeddingClient(EmbeddingClient):
         if self._client is None:
             self._client = genai.Client(
                 api_key=self.settings.gemini_api_key.get_secret_value()
+            )
+        return self._client
+
+
+class GeminiLLMClient(LLMClient):
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        self._client: genai.Client | None = None
+
+    def generate(self, prompt: str, *, system_instruction: str = "") -> str:
+        client = self._get_client()
+        try:
+            response = client.models.generate_content(
+                model=self.settings.gemini_chat_model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    max_output_tokens=self.settings.chat_max_output_tokens,
+                    thinking_config=types.ThinkingConfig(
+                        thinking_level=types.ThinkingLevel.LOW
+                    ),
+                ),
+            )
+        except errors.APIError as error:
+            code = error.code
+            raise LLMProviderError(
+                "Gemini rejected the chat request.",
+                retryable=code == 429 or code >= 500,
+                status_code=code,
+                retry_after_seconds=_retry_after_seconds(error),
+            ) from None
+        except (httpx.TransportError, TimeoutError, ConnectionError):
+            raise LLMProviderError(
+                "Gemini chat service could not be reached.", retryable=True
+            ) from None
+
+        candidates = response.candidates or []
+        if candidates and candidates[0].finish_reason == types.FinishReason.MAX_TOKENS:
+            raise LLMOutputTruncatedError()
+        if not response.text:
+            raise LLMProviderError(
+                "Gemini returned no chat answer.", status_code=502
+            )
+        return response.text
+
+    def _get_client(self) -> genai.Client:
+        if self.settings.gemini_api_key is None:
+            raise LLMProviderError(
+                "Gemini chat is not configured.", status_code=503
+            )
+        if self._client is None:
+            self._client = genai.Client(
+                api_key=self.settings.gemini_api_key.get_secret_value(),
+                http_options=types.HttpOptions(
+                    timeout=self.settings.chat_timeout_seconds * 1000,
+                    retry_options=types.HttpRetryOptions(attempts=1),
+                ),
             )
         return self._client

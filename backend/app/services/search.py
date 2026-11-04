@@ -17,7 +17,11 @@ class SearchService:
         embedding_model: str,
         top_k: int,
         min_similarity: float,
+        document_ids: list[UUID] | None = None,
     ) -> list[tuple[Chunk, Document, float]]:
+        if document_ids == []:
+            return []
+
         distance = Chunk.embedding.cosine_distance(query_embedding)
         similarity = (1 - distance).label("similarity")
         statement = (
@@ -40,6 +44,8 @@ class SearchService:
             .order_by(distance.asc())
             .limit(top_k)
         )
+        if document_ids is not None:
+            statement = statement.where(Document.id.in_(document_ids))
         return [
             (chunk, document, float(score))
             for chunk, document, score in session.execute(statement).all()

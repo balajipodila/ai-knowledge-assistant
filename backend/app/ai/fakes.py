@@ -1,14 +1,29 @@
+from collections.abc import Sequence
+
 from app.ai.interfaces import EmbeddingClient, LLMClient
 from app.core.constants import EMBEDDING_DIMENSION
 
 
 class FakeLLMClient(LLMClient):
-    def __init__(self, response: str = "fake response") -> None:
+    def __init__(
+        self,
+        response: str = "fake response",
+        *,
+        responses: Sequence[str | Exception] = (),
+    ) -> None:
         self.response = response
+        self.responses = list(responses)
         self.prompts: list[str] = []
+        self.system_instructions: list[str] = []
 
-    def generate(self, prompt: str) -> str:
+    def generate(self, prompt: str, *, system_instruction: str = "") -> str:
         self.prompts.append(prompt)
+        self.system_instructions.append(system_instruction)
+        if self.responses:
+            response = self.responses.pop(0)
+            if isinstance(response, Exception):
+                raise response
+            return response
         return self.response
 
 

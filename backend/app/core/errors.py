@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException
 
 from app.core.request_id import get_request_id
+from app.services.chat import ChatError
 from app.services.ingestion import DocumentUploadError
 
 logger = structlog.get_logger(__name__)
@@ -46,6 +47,15 @@ def register_exception_handlers(application: FastAPI) -> None:
     async def handle_document_upload_error(
         request: Request, exception: DocumentUploadError
     ) -> JSONResponse:
+        return _error_response(
+            request,
+            exception.status_code,
+            exception.code,
+            exception.message,
+        )
+
+    @application.exception_handler(ChatError)
+    async def handle_chat_error(request: Request, exception: ChatError) -> JSONResponse:
         return _error_response(
             request,
             exception.status_code,

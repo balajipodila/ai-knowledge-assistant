@@ -9,8 +9,8 @@ A local-first RAG web app for uploading PDFs, searching personal documents, and 
 3. **M3 — Authentication:** email/password signup and login, JWT access tokens, and authenticated current-user dependency.
 4. **M4 — PDF upload and ingestion:** validate uploads, extract document text and page metadata, and track processing state.
 5. **M5 — Embeddings and vector search:** generate/store embeddings and search ready document chunks with user-scoped cosine similarity.
-6. **M6 — Retrieval tuning:** evaluate and improve search relevance over user-scoped document chunks.
 7. **M7 — Cited chat:** answer questions from retrieved context with source/page citations.
+6. **M6 — Retrieval tuning:** evaluate and improve search relevance over user-scoped document chunks.
 8. **M8 — Frontend workflows:** authentication, document management, upload progress, search and chat UI.
 9. **M9 — Security, reliability and deployment:** operational hardening, observability, deployment configuration and recovery.
 10. **M10 — Evaluation and production readiness:** end-to-end verification, quality evaluation, performance checks and release readiness.
@@ -133,6 +133,49 @@ python -m alembic upgrade head --sql
 ```
 
 Do not apply a migration to Neon until its generated SQL has been reviewed and explicitly approved.
+
+### Cited chat (M7; delivered before M6 retrieval tuning)
+
+`POST /chat` requires a bearer token and accepts a nonblank `question` plus an
+optional `document_ids` list. Retrieval uses the same user-scoped cosine search
+as `/search`; requested document IDs are filtered together with the authenticated
+user ID. If no chunks meet `SEARCH_MIN_SIMILARITY`, chat returns
+`I could not find this in your documents.` without calling Gemini.
+
+The answer must cite retrieved chunks with labels such as `[1]`. The API drops
+citation labels that do not match retrieved chunks and returns citations with
+document name, page, and a snippet capped at 300 characters. Document text is
+passed as delimited untrusted data; system instructions tell the model to ignore
+instructions inside document text. The request size, retrieved chunk count,
+context size, output tokens, timeout, and retry delays are bounded by the
+`GEMINI_CHAT_MODEL` and `CHAT_*` settings in `.env.example`.
+
+The default model is `gemini-3.8-flash`. Google lists it as a stable model with
+a 1,048,576-token input limit and 65,536-token output limit ([official model
+documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash));
+the app defaults its own output cap to 2,048 tokens and uses low thinking.
+Google lists standard input/output as free of charge on the Free tier, but rate
+limits vary by project and account; check the current limits in Google AI
+Studio. The API retries transient 429/5xx errors with bounded backoff and
+respects `Retry-After` up to the configured cap.
+
+An optional manual smoke test uploads a synthetic PDF and sends a real chat
+request through the running API:
+
+```powershell
+python .\scripts\gemini_chat_smoke.py --pdf C:\path\to\synthetic.pdf
+```
+
+The script requires a question matching the PDF well enough to retrieve a
+chunk. It reports a clear model-name error if Google returns 404. It does not
+print API keys or full chunk text. Pytest uses fakes and never calls Gemini.
+There is currently **no per-user rate limit** on `/chat`; adding one is planned
+for M9 security and reliability hardening. Do not send sensitive documents to
+the Gemini API when using a Free-tier project.
+
+M7 is intentionally delivered before M6 so the existing retrieval can support
+the first cited-chat workflow; M6 retrieval relevance evaluation remains
+pending.
 
 ### Frontend
 
