@@ -10,27 +10,24 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-4">
-          <Link
-            href="/"
-            className="text-lg font-bold tracking-tight text-slate-950"
-          >
+      <header className="site-header">
+        <div className="site-header-inner">
+          <Link href="/" className="brand-link">
             AI Knowledge Assistant
           </Link>
-          <nav aria-label="Main navigation" className="flex items-center gap-4 text-sm">
+          <nav aria-label="Main navigation" className="desktop-nav">
             {status === "authenticated" ? (
               <>
-                <Link className="font-medium text-slate-700 hover:text-cyan-800" href="/documents">
+                <Link href="/documents">
                   Documents
                 </Link>
-                <Link className="font-medium text-slate-700 hover:text-cyan-800" href="/chat">
+                <Link href="/chat">
                   Chat
                 </Link>
-                <span className="hidden text-slate-500 sm:inline">{user?.email}</span>
+                <span className="account-email">{user?.email}</span>
                 <button
                   type="button"
-                  className="rounded-md border border-slate-300 px-3 py-2 font-semibold text-slate-800 hover:bg-slate-50"
+                  className="button-secondary"
                   onClick={signOut}
                 >
                   Log out
@@ -38,18 +35,34 @@ export function AppShell({ children }: { children: ReactNode }) {
               </>
             ) : (
               <>
-                <Link className="font-medium text-slate-700 hover:text-cyan-800" href="/login">
+                <Link href="/login">
                   Log in
                 </Link>
-                <Link
-                  className="rounded-md bg-slate-950 px-3 py-2 font-semibold text-white hover:bg-slate-800"
-                  href="/signup"
-                >
+                <Link className="button-primary" href="/signup">
                   Sign up
                 </Link>
               </>
             )}
           </nav>
+          <details className="mobile-nav">
+            <summary>Menu</summary>
+            <nav aria-label="Mobile navigation">
+              {status === "authenticated" ? (
+                <>
+                  <Link href="/documents">Documents</Link>
+                  <Link href="/chat">Chat</Link>
+                  <button type="button" onClick={signOut}>
+                    Log out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">Log in</Link>
+                  <Link href="/signup">Sign up</Link>
+                </>
+              )}
+            </nav>
+          </details>
         </div>
       </header>
       {children}

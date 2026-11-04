@@ -91,37 +91,36 @@ export function AuthForm({ mode }: { mode: Mode }) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 items-start px-6 py-12 sm:py-16">
-      <section className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-800">
+    <main className="auth-main" id="main-content">
+      <section className="glass-panel glass-blur auth-card">
+        <p className="eyebrow">
           {isSignup ? "Get started" : "Welcome back"}
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+        <h1>
           {isSignup ? "Create your account" : "Log in"}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
+        <p className="auth-description">
           {isSignup
             ? "Use a valid email address and a password between 12 and 128 characters."
             : "Sign in to access your documents and cited chat."}
         </p>
         {expiredNotice && (
-          <p className="mt-5 rounded-lg bg-amber-50 p-3 text-sm text-amber-950" role="status">
+          <p className="auth-notice" role="status">
             Your session expired. Please log in again.
           </p>
         )}
         {formError && (
-          <p className="mt-5 rounded-lg bg-rose-50 p-3 text-sm text-rose-800" role="alert">
+          <p className="auth-error" role="alert">
             {formError}
           </p>
         )}
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit} noValidate>
-          <div>
-            <label className="block text-sm font-semibold text-slate-800" htmlFor="email">
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="auth-field">
+            <label htmlFor="email">
               Email address
             </label>
             <input
               autoComplete="email"
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-950"
               id="email"
               maxLength={320}
               name="email"
@@ -132,18 +131,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
             />
             {fieldErrors.email && (
-              <p className="mt-1 text-sm text-rose-700" id="email-error">
+              <p className="auth-field-error" id="email-error">
                 {fieldErrors.email}
               </p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-slate-800" htmlFor="password">
+          <div className="auth-field">
+            <label htmlFor="password">
               Password
             </label>
             <input
               autoComplete={isSignup ? "new-password" : "current-password"}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-950"
               id="password"
               maxLength={128}
               minLength={isSignup ? 12 : undefined}
@@ -155,11 +153,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
               aria-describedby={fieldErrors.password ? "password-error" : "password-help"}
             />
             {fieldErrors.password ? (
-              <p className="mt-1 text-sm text-rose-700" id="password-error">
+              <p className="auth-field-error" id="password-error">
                 {fieldErrors.password}
               </p>
             ) : (
-              <p className="mt-1 text-xs text-slate-500" id="password-help">
+              <p className="auth-help" id="password-help">
                 {isSignup
                   ? "12–128 characters; spaces are allowed and are not trimmed."
                   : "Maximum 128 characters."}
@@ -167,7 +165,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             )}
           </div>
           <button
-            className="w-full rounded-lg bg-slate-950 px-4 py-3 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="button-primary auth-submit"
             disabled={isSubmitting}
             type="submit"
           >
@@ -180,12 +178,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
                 : "Log in"}
           </button>
         </form>
-        <p className="mt-6 text-sm text-slate-600">
+        <p className="auth-switch">
           {isSignup ? "Already have an account?" : "New to the assistant?"}{" "}
-          <Link
-            className="font-semibold text-cyan-800 underline underline-offset-2"
-            href={isSignup ? "/login" : "/signup"}
-          >
+          <Link href={isSignup ? "/login" : "/signup"}>
             {isSignup ? "Log in" : "Create an account"}
           </Link>
         </p>

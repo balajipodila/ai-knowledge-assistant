@@ -110,6 +110,10 @@ wait for it to become ready, then ask a question grounded in that document.
 Tokens are stored in `sessionStorage` and expire after 30 minutes. There is no
 refresh token; after expiry, sign in again.
 
+The interface uses `next/font` to bundle its sans-serif font during the build.
+The first build therefore needs network access to retrieve the font; the
+running site does not load the font from an external URL.
+
 ### Run tests safely
 
 The backend tests use SQLite and fake AI clients. The PostgreSQL vector tests
