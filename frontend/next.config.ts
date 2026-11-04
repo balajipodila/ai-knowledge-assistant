@@ -22,6 +22,7 @@ const csp = [
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  output: "standalone",
   async headers() {
     return [
       {

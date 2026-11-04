@@ -1,0 +1,10 @@
+.env
+.env.*
+.git
+.next
+node_modules
+out
+coverage
+*.log
+*.pdf
+**/*.pdf

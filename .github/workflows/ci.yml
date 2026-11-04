@@ -64,3 +64,20 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+
+  container-images:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build backend image
+        run: docker build --pull --tag ai-knowledge-assistant-backend:ci ./backend
+
+      - name: Build frontend image
+        run: >-
+          docker build --pull
+          --build-arg NEXT_PUBLIC_API_URL=http://localhost:8000
+          --tag ai-knowledge-assistant-frontend:ci
+          ./frontend
