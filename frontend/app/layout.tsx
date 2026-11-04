@@ -12,7 +12,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI Knowledge Assistant",
+  title: {
+    default: "AI Knowledge Assistant",
+    template: "%s | AI Knowledge Assistant",
+  },
   description:
     "Ask questions about your PDFs and explore answers grounded in retrieved passages.",
   icons: { icon: "/icon.svg" },

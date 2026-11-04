@@ -1508,6 +1508,37 @@ input {
   padding-bottom: 1.5rem;
 }
 
+.protected-route-status {
+  min-height: 12rem;
+  padding-top: 3rem;
+}
+
+.not-found-page {
+  display: grid;
+  min-height: 65vh;
+  place-items: center;
+}
+
+.not-found-card {
+  width: min(100%, 42rem);
+  border-color: var(--border-glass);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  box-shadow: var(--shadow-panel);
+}
+
+.not-found-card .page-title {
+  margin: 0.6rem 0 0;
+  color: var(--silver-light);
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.not-found-card .page-description {
+  margin: 1rem 0 1.5rem;
+  line-height: 1.7;
+}
+
 .chat-page .workspace-page-header {
   margin-bottom: 1.5rem;
 }
@@ -1665,6 +1696,13 @@ input {
   padding: 1rem;
   background: var(--glass-header);
   box-shadow: var(--shadow-panel);
+}
+
+.not-found-card {
+  position: static;
+  margin: 0;
+  border-radius: var(--radius-card);
+  background: var(--glass-fill);
 }
 
 .chat-composer-panel .helper-text {
@@ -2014,6 +2052,7 @@ input {
   .glass-panel,
   .chat-filter-panel,
   .chat-composer-panel,
+  .not-found-card,
   .assistant-message,
   .chat-empty-mark,
   .status-badge,
