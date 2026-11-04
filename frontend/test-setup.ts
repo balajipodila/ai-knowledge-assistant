@@ -1,6 +1,8 @@
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+
 const routerMocks = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
@@ -18,6 +20,10 @@ if (typeof HTMLDialogElement !== "undefined") {
   HTMLDialogElement.prototype.close = function close() {
     this.removeAttribute("open");
   };
+}
+
+if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = vi.fn();
 }
 
 afterEach(() => {

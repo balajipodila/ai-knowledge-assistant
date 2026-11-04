@@ -231,6 +231,14 @@ frontend limit in `frontend/components/documents-manager.tsx` to match if you
 change `MAX_UPLOAD_SIZE_BYTES`. Upload and embedding run synchronously on the
 backend; the frontend allows up to two minutes for upload requests.
 
+The protected `/chat` page loads only ready documents for optional scope
+selection and sends questions to `POST /chat`. The backend currently defaults
+to a 2,000-character question limit and a 30-second generation deadline; the
+frontend mirrors the question limit and allows 45 seconds for embedding,
+retrieval, and generation together. Turns and citations are kept only in page
+memory. Cancelling a request discards its response in the browser; it does not
+stop the backend request, which may continue and use provider quota.
+
 ### Neon and pgvector
 
 Copy `.env.example` to `.env` and set `DATABASE_URL` to the connection URL shown by Neon. Keep `.env` private; it is ignored by Git. Then, from `backend`, run:

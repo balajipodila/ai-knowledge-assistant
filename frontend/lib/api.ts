@@ -97,10 +97,17 @@ export async function apiRequest<T>(
     timeoutMs = 15000,
     auth = true,
     headers: inputHeaders,
+    signal: externalSignal,
     ...requestOptions
   } = options;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  const abortRequest = () => controller.abort();
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener("abort", abortRequest, { once: true });
+  }
   const headers = new Headers(inputHeaders);
   headers.set("Accept", "application/json");
 
@@ -176,5 +183,6 @@ export async function apiRequest<T>(
     );
   } finally {
     window.clearTimeout(timeout);
+    externalSignal?.removeEventListener("abort", abortRequest);
   }
 }
