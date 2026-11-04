@@ -1,6 +1,8 @@
 from functools import lru_cache
 from ipaddress import ip_network
 from pathlib import Path
+from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,7 +32,13 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)
+    file_storage_backend: Literal["local", "s3"] = "local"
     upload_directory: Path = ROOT_DIR / ".local" / "uploads"
+    s3_endpoint_url: str | None = None
+    s3_bucket: str | None = None
+    s3_region: str = "auto"
+    s3_access_key_id: SecretStr | None = None
+    s3_secret_access_key: SecretStr | None = None
     max_upload_size_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     max_pdf_pages: int = Field(default=200, gt=0)
     chunk_size: int = Field(default=900, ge=100, le=4000)
@@ -92,6 +100,17 @@ class Settings(BaseSettings):
         except ValueError as error:
             raise ValueError("TRUSTED_PROXY_CIDRS must contain valid IP networks.") from error
 
+    @field_validator("s3_endpoint_url")
+    @classmethod
+    def s3_endpoint_must_be_an_absolute_http_url(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        endpoint = value.strip()
+        parsed = urlsplit(endpoint)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("S3_ENDPOINT_URL must be an absolute HTTP(S) URL.")
+        return endpoint
+
     @model_validator(mode="after")
     def embedding_dimension_matches_schema(self) -> "Settings":
         if self.gemini_embedding_dimension != EMBEDDING_DIMENSION:
@@ -105,6 +124,24 @@ class Settings(BaseSettings):
     def chunk_overlap_is_smaller_than_chunk_size(self) -> "Settings":
         if self.chunk_overlap >= self.chunk_size:
             raise ValueError("CHUNK_OVERLAP must be smaller than CHUNK_SIZE.")
+        return self
+
+    @model_validator(mode="after")
+    def s3_storage_requires_configuration(self) -> "Settings":
+        if self.file_storage_backend == "s3" and (
+            not self.s3_endpoint_url
+            or not self.s3_bucket
+            or not self.s3_bucket.strip()
+            or not self.s3_region.strip()
+            or self.s3_access_key_id is None
+            or not self.s3_access_key_id.get_secret_value().strip()
+            or self.s3_secret_access_key is None
+            or not self.s3_secret_access_key.get_secret_value().strip()
+        ):
+            raise ValueError(
+                "S3 storage requires S3_ENDPOINT_URL, S3_BUCKET, "
+                "S3_ACCESS_KEY_ID, and S3_SECRET_ACCESS_KEY."
+            )
         return self
 
     @model_validator(mode="after")

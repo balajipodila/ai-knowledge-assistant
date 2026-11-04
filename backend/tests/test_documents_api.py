@@ -20,6 +20,7 @@ from app.core.passwords import hash_password
 from app.core.tokens import create_access_token
 from app.main import create_app
 from app.models import Base, Chunk, Document, EmbeddingCache, User
+from app.services.storage import FileStorage
 
 _TEST_SECRET = "test-only-signing-key-with-at-least-32-bytes"
 
@@ -146,6 +147,43 @@ def test_valid_upload_extracts_text_and_stores_page_chunks(
     assert [chunk.chunk_index for chunk in chunks] == list(range(len(chunks)))
     assert all(len(chunk.content) <= 180 for chunk in chunks)
     assert (document_client["settings"].upload_directory / document.storage_key).exists()
+
+
+def test_upload_and_delete_use_the_configured_storage_factory(
+    document_client: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class MemoryFileStorage(FileStorage):
+        def __init__(self) -> None:
+            self.objects: dict[str, bytes] = {}
+
+        def save(self, data: bytes) -> str:
+            key = "stored.pdf"
+            self.objects[key] = data
+            return key
+
+        def delete(self, storage_key: str) -> None:
+            del self.objects[storage_key]
+
+    storage = MemoryFileStorage()
+    monkeypatch.setattr(
+        "app.api.documents.create_file_storage",
+        lambda settings: storage,
+    )
+    content = _pdf_bytes(["Storage factory test"])
+    upload = _upload(document_client, content)
+
+    assert upload.status_code == 201
+    document_id = upload.json()["id"]
+    assert storage.objects == {"stored.pdf": content}
+
+    delete = document_client["client"].delete(
+        f"/documents/{document_id}",
+        headers=document_client["headers"],
+    )
+
+    assert delete.status_code == 204
+    assert storage.objects == {}
 
 
 def test_document_cap_allows_duplicate_but_rejects_a_new_document(

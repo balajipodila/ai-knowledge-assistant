@@ -23,7 +23,7 @@ from app.schemas.documents import DocumentResponse, DocumentUploadResponse
 from app.services.documents import DocumentService
 from app.services.embeddings import EmbeddingService
 from app.services.ingestion import DocumentIngestionService, DocumentUploadError
-from app.services.storage import LocalFileStorage
+from app.services.storage import create_file_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -49,7 +49,7 @@ async def upload_document(
             413, "FILE_TOO_LARGE", "The uploaded file exceeds the configured size limit."
         )
     document, chunk_count, duplicate = DocumentIngestionService(
-        storage=LocalFileStorage(settings.upload_directory),
+        storage=create_file_storage(settings),
         settings=settings,
         embedding_client=embedding_client,
     ).upload(
@@ -143,7 +143,7 @@ def delete_document(
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found.")
     if document.storage_key is not None:
-        LocalFileStorage(settings.upload_directory).delete(document.storage_key)
+        create_file_storage(settings).delete(document.storage_key)
     service.delete_document(
         session, user_id=user.id, document_id=document_id
     )
