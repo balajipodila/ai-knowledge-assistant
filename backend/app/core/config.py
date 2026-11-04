@@ -18,6 +18,12 @@ class Settings(BaseSettings):
 
     database_url: SecretStr | None = None
     test_database_url: SecretStr | None = None
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+    )
     app_environment: str = Field(default="development", validation_alias="APP_ENV")
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
@@ -54,6 +60,16 @@ class Settings(BaseSettings):
     def resolve_upload_directory(cls, value: str | Path) -> Path:
         path = Path(value)
         return path if path.is_absolute() else ROOT_DIR / path
+
+    @field_validator("cors_origins")
+    @classmethod
+    def cors_origins_must_be_explicit(cls, origins: list[str]) -> list[str]:
+        normalized = [origin.strip().rstrip("/") for origin in origins]
+        if not normalized or any(not origin or origin == "*" for origin in normalized):
+            raise ValueError("CORS_ORIGINS must contain explicit origins; '*' is not allowed.")
+        if any("://" not in origin or "/" in origin.split("://", 1)[1] for origin in normalized):
+            raise ValueError("CORS_ORIGINS entries must be origins without paths.")
+        return normalized
 
     @model_validator(mode="after")
     def embedding_dimension_matches_schema(self) -> "Settings":

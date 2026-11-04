@@ -18,6 +18,10 @@ def test_settings_accept_python_312_default_embedding_configuration() -> None:
     assert settings.gemini_embedding_dimension == 768
     assert settings.search_max_top_k == 20
     assert settings.search_min_similarity == 0.0
+    assert settings.cors_origins == [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
     assert settings.chat_generation_deadline_seconds == 30
     assert settings.chat_attempt_timeout_seconds == 15
     assert settings.gemini_chat_fallback_model is None
@@ -41,3 +45,8 @@ def test_settings_accept_chat_deadline_and_optional_fallback_model() -> None:
 def test_settings_reject_dimension_that_does_not_match_schema() -> None:
     with pytest.raises(ValidationError, match="must match the database vector dimension"):
         Settings(_env_file=None, gemini_embedding_dimension=512)
+
+
+def test_settings_reject_wildcard_cors_origin() -> None:
+    with pytest.raises(ValidationError, match="explicit origins"):
+        Settings(_env_file=None, CORS_ORIGINS=["*"])
