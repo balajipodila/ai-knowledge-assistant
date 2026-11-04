@@ -38,6 +38,16 @@ def test_cors_preflight_allows_configured_frontend_origin() -> None:
     assert "X-Request-ID" in exposed_headers
     assert "Retry-After" in exposed_headers
     assert actual_response.headers["X-Request-ID"]
+    assert actual_response.headers["X-Content-Type-Options"] == "nosniff"
+    assert actual_response.headers["Referrer-Policy"] == "no-referrer"
+    assert actual_response.headers["X-Frame-Options"] == "DENY"
+    assert "default-src 'none'" in actual_response.headers["Content-Security-Policy"]
+
+    documentation_response = client.get("/docs")
+    assert documentation_response.status_code == 200
+    assert "https://cdn.jsdelivr.net" in documentation_response.headers[
+        "Content-Security-Policy"
+    ]
 
 
 def test_cors_preflight_rejects_unconfigured_origin() -> None:

@@ -60,6 +60,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         response.headers[REQUEST_ID_HEADER] = request_id
         return response
 
+    @application.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["X-Frame-Options"] = "DENY"
+        if request.url.path in {"/docs", "/redoc"}:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self' 'unsafe-inline' "
+                "https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' "
+                "https://cdn.jsdelivr.net; img-src 'self' data: "
+                "https://fastapi.tiangolo.com; connect-src 'self'; "
+                "object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+            )
+        else:
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'none'; object-src 'none'; frame-ancestors 'none'; "
+                "base-uri 'none'"
+            )
+        return response
+
     return application
 
 
