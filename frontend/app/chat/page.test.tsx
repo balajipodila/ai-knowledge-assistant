@@ -90,10 +90,15 @@ describe("chat page", () => {
 
   it("sends selected ready document ids and uses a 45-second timeout", async () => {
     const fetchMock = renderChat();
-    await screen.findByLabelText("machine-learning.pdf");
+    const documentChip = await screen.findByRole("checkbox", {
+      name: "machine-learning.pdf",
+    });
     const setTimeoutSpy = vi.spyOn(window, "setTimeout");
     fetchMock.mockResolvedValueOnce(chatResponse("A short answer."));
-    fireEvent.click(screen.getByLabelText("machine-learning.pdf"));
+    fireEvent.click(documentChip);
+    expect(documentChip.getAttribute("aria-label")).toBeNull();
+    expect(documentChip).toHaveProperty("checked", true);
+    expect(screen.getByText("1 selected")).toBeTruthy();
     await submit("Explain machine learning?");
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));

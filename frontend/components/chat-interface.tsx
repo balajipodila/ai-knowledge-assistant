@@ -364,8 +364,8 @@ export function ChatInterface() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-      <header>
+    <main className="workspace-page chat-page" id="main-content">
+      <header className="workspace-page-header">
         <p className="eyebrow">
           Ask your documents
         </p>
@@ -382,11 +382,23 @@ export function ChatInterface() {
 
       <section
         aria-labelledby="document-filter-heading"
-        className="glass-panel mt-7 p-5"
+        className="glass-panel chat-filter-panel"
       >
-        <h2 id="document-filter-heading" className="section-subheading font-semibold">
-          Search in documents
-        </h2>
+        <div className="chat-filter-heading">
+          <div>
+            <p className="eyebrow">Search scope</p>
+            <h2 id="document-filter-heading" className="section-subheading font-semibold">
+              Choose documents
+            </h2>
+          </div>
+          {readyDocuments.length > 0 && (
+            <span className="helper-text chat-selected-count" aria-live="polite">
+              {selectedIds.length === 0
+                ? "All ready documents"
+                : `${selectedIds.length} selected`}
+            </span>
+          )}
+        </div>
         {documentsLoading && (
           <p className="helper-text mt-3 text-sm" role="status">
             Loading ready documents…
@@ -420,9 +432,9 @@ export function ChatInterface() {
         )}
         {!documentsLoading && readyDocuments.length > 0 && (
           <>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="chat-filter-description">
               <p className="helper-text text-sm">
-                Leave all unchecked to search every ready document.
+                Select specific sources, or leave all unchecked to search every ready document.
               </p>
               <button
                 className="citation-link text-sm font-semibold underline underline-offset-2"
@@ -433,17 +445,17 @@ export function ChatInterface() {
                 Refresh ready documents
               </button>
             </div>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul aria-label="Ready documents" className="document-chip-list">
               {readyDocuments.map((document) => (
                 <li key={document.id}>
-                  <label className="document-choice flex min-w-0 cursor-pointer items-start gap-3 rounded-lg p-3">
+                  <label className="document-choice document-chip">
                     <input
                       checked={selectedIds.includes(document.id)}
-                      className="document-checkbox mt-1 h-4 w-4"
+                      className="document-checkbox"
                       onChange={() => toggleDocument(document.id)}
                       type="checkbox"
                     />
-                    <span className="document-filename min-w-0 truncate text-sm font-medium" title={document.filename}>
+                    <span className="document-filename" title={document.filename}>
                       {document.filename}
                     </span>
                   </label>
@@ -454,27 +466,31 @@ export function ChatInterface() {
         )}
       </section>
 
-      <section aria-label="Conversation" className="mt-7">
+      <section aria-label="Conversation" className="chat-conversation">
         {turns.length === 0 && (
-          <div className="glass-panel empty-state p-8 text-center">
-            <h2 className="section-subheading font-semibold">Ask your first question</h2>
-            <p className="page-description mt-2 text-sm">
-              Choose documents above if you want to limit the search.
-            </p>
+          <div className="glass-panel empty-state chat-empty-state">
+            <span aria-hidden="true" className="chat-empty-mark">?</span>
+            <div>
+              <p className="eyebrow">Grounded answers</p>
+              <h2 className="section-subheading font-semibold">Ask your first question</h2>
+              <p className="page-description">
+                Choose documents above if you want to limit the search. Answers include links to their source passages.
+              </p>
+            </div>
           </div>
         )}
-        <ol className="space-y-6">
+        <ol className="chat-turn-list">
           {turns.map((turn, index) => {
             const isLatest = index === turns.length - 1;
             const response = turn.response;
             const notFound = response ? isNotFound(response) : false;
             return (
               <li
-                className="scroll-mt-6 space-y-4"
+                className="chat-turn scroll-mt-6"
                 key={turn.index}
                 ref={isLatest ? latestTurnRef : undefined}
               >
-                <div className="user-message ml-auto max-w-3xl rounded-2xl p-4 sm:p-5">
+                <div className="user-message">
                   <p className="user-message-label text-xs font-semibold uppercase tracking-wide">
                     You asked
                   </p>
@@ -482,7 +498,7 @@ export function ChatInterface() {
                 </div>
 
                 {turn.isLoading && (
-                  <div className="notice notice-info rounded-2xl p-4" role="status">
+                  <div className="notice notice-info chat-thinking" role="status">
                     <NoticeIcon kind="info" />
                     <div className="min-w-0">
                       <p className="font-semibold">Thinking…</p>
@@ -501,7 +517,7 @@ export function ChatInterface() {
                 )}
 
                 {turn.error && (
-                  <div className="notice notice-error rounded-2xl p-4" role="alert">
+                  <div className="notice notice-error chat-error" role="alert">
                     <NoticeIcon kind="error" />
                     <div className="min-w-0">
                       <p className="text-sm">{turn.error}</p>
@@ -523,10 +539,10 @@ export function ChatInterface() {
 
                 {response && (
                   <div
-                    className={`rounded-2xl border p-4 sm:p-5 ${
+                    className={`assistant-message ${
                       notFound
-                        ? "notice notice-warning"
-                        : "glass-panel"
+                        ? "notice notice-warning not-found-message"
+                        : "glass-panel answer-card"
                     }`}
                   >
                     {notFound ? (
@@ -599,7 +615,7 @@ export function ChatInterface() {
         {announcement}
       </p>
 
-      <section className="chat-composer sticky bottom-0 mt-8 border-t py-4">
+      <section className="chat-composer chat-composer-panel">
         <label className="field-label block text-sm font-semibold" htmlFor="chat-question">
           Your question
         </label>

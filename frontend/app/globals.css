@@ -1324,7 +1324,8 @@ input {
   .document-choice,
   .citation-card,
   .delete-dialog,
-  .chat-composer {
+  .chat-composer,
+  .chat-composer-panel {
     background: var(--obsidian-900);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1500,8 +1501,204 @@ input {
   background: var(--glass-header);
 }
 
+.chat-page {
+  display: flex;
+  min-height: calc(100dvh - 4rem);
+  flex-direction: column;
+  padding-bottom: 1.5rem;
+}
+
+.chat-page .workspace-page-header {
+  margin-bottom: 1.5rem;
+}
+
+.chat-filter-panel {
+  border-color: var(--border-glass);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-panel);
+}
+
+.chat-filter-heading,
+.chat-filter-description {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.chat-filter-heading .eyebrow {
+  margin: 0 0 0.35rem;
+}
+
+.chat-filter-heading .section-subheading {
+  margin: 0;
+}
+
+.chat-selected-count {
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-control);
+  padding: 0.35rem 0.7rem;
+  color: var(--text-primary);
+}
+
+.chat-filter-description {
+  margin-top: 1rem;
+}
+
+.document-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document-chip-list li {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.document-chip {
+  display: inline-flex;
+  min-height: 2.75rem;
+  max-width: min(100%, 22rem);
+  align-items: center;
+  gap: 0.6rem;
+  border-radius: var(--radius-control);
+  padding: 0.55rem 0.85rem;
+  color: var(--text-primary);
+  background: var(--glass-control);
+}
+
+.document-chip:hover,
+.document-chip:has(.document-checkbox:checked) {
+  border-color: var(--silver-light);
+  background: var(--maroon-800);
+}
+
+.document-chip:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.document-chip .document-filename {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.document-chip .document-checkbox {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.chat-conversation {
+  flex: 1;
+  margin-top: 1.5rem;
+}
+
+.chat-empty-state {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  border-style: solid;
+  border-color: var(--border-glass);
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.chat-empty-state .eyebrow {
+  margin: 0 0 0.35rem;
+}
+
+.chat-empty-state .section-subheading,
+.chat-empty-state .page-description {
+  margin-top: 0;
+}
+
+.chat-empty-state .page-description {
+  max-width: 40rem;
+  margin-bottom: 0;
+}
+
+.chat-empty-mark {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--silver-light);
+  background: var(--glass-control);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.chat-turn-list {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-turn {
+  display: grid;
+  gap: 0.85rem;
+}
+
 .chat-composer textarea {
   border-radius: var(--radius-control);
+}
+
+.chat-composer-panel {
+  position: sticky;
+  z-index: 4;
+  bottom: 0;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-card);
+  padding: 1rem;
+  background: var(--glass-header);
+  box-shadow: var(--shadow-panel);
+}
+
+.chat-composer-panel .helper-text {
+  max-width: 48rem;
+  line-height: 1.5;
+}
+
+.user-message {
+  width: fit-content;
+  max-width: min(90%, 48rem);
+  justify-self: end;
+  border-radius: var(--radius-card);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow-panel);
+}
+
+.assistant-message {
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+}
+
+.answer-card {
+  box-shadow: var(--shadow-panel);
+}
+
+.chat-thinking,
+.chat-error {
+  align-items: flex-start;
+  border-radius: var(--radius-card);
+  padding: 1rem 1.25rem;
+}
+
+.not-found-message {
+  border-radius: var(--radius-card);
 }
 
 .empty-state {
@@ -1815,6 +2012,10 @@ input {
   }
 
   .glass-panel,
+  .chat-filter-panel,
+  .chat-composer-panel,
+  .assistant-message,
+  .chat-empty-mark,
   .status-badge,
   .notice,
   .input-shell,
