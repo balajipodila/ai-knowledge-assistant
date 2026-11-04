@@ -48,7 +48,12 @@ def search_documents(
         query_embedding=query_embedding,
         embedding_model=settings.gemini_embedding_model,
         top_k=request.top_k,
-        min_similarity=settings.search_min_similarity,
+        min_similarity=(
+            request.min_similarity
+            if request.min_similarity is not None
+            else settings.search_min_similarity
+        ),
+        document_ids=request.document_ids,
     )
     return SearchResponse(
         results=[

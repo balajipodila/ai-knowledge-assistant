@@ -89,6 +89,22 @@ defaults to 20; `SEARCH_MIN_SIMILARITY` defaults to 0.0. The M2 cosine HNSW
 index is reused. Embedding failures preserve the uploaded file and extracted
 chunks and mark the document `embedding_failed`.
 
+For manual retrieval-threshold measurement, start the API and prepare a UTF-8
+text file with one question per line, labelled `relevant:` or `offtopic:`. Run
+the tool from `backend`; it prompts for the test account credentials and does
+not print question text, document chunks, keys, or tokens:
+
+```powershell
+python .\scripts\retrieval_scores.py --document-id <document-uuid> --questions-file C:\path\to\questions.txt
+```
+
+The tool measures only the selected user's selected document and prints the
+top-five similarity scores and page numbers per question, then min/max top-one
+scores by label. It requests a `-1.0` similarity cutoff to measure the full
+cosine-score range, without changing the configured default. `/search` also
+accepts optional `document_ids` and `min_similarity`; omitted `min_similarity`
+continues to use `SEARCH_MIN_SIMILARITY`.
+
 The M5 migration changes document status validation, adds chunk model
 provenance, and creates the embedding cache. Generate its SQL for review before
 any database change:

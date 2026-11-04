@@ -8,6 +8,38 @@ import httpx
 _NO_CONTEXT_ANSWER = "I could not find this in your documents."
 
 
+def _request_id(response: httpx.Response) -> str:
+    if request_id := response.headers.get("X-Request-ID"):
+        return request_id
+    try:
+        body = response.json()
+    except ValueError:
+        return "unavailable"
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict) and isinstance(error.get("request_id"), str):
+            return error["request_id"]
+    return "unavailable"
+
+
+def _error_code(response: httpx.Response) -> str:
+    try:
+        body = response.json()
+    except ValueError:
+        return "unavailable"
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict) and isinstance(error.get("code"), str):
+            return error["code"]
+    return "unavailable"
+
+
+def _print_failure(response: httpx.Response, message: str) -> None:
+    print(f"{message} HTTP {response.status_code}.")
+    print(f"Error code: {_error_code(response)}")
+    print(f"Request ID: {_request_id(response)}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Smoke-test cited chat with a synthetic PDF and Gemini."
@@ -34,7 +66,7 @@ def main() -> int:
                 json={"email": email, "password": password},
             )
             if login.status_code != 200:
-                print("Login failed; check the account and API response.")
+                _print_failure(login, "Login failed; check the account.")
                 return 1
             token = login.json()["access_token"]
             headers = {"Authorization": f"Bearer {token}"}
@@ -52,12 +84,15 @@ def main() -> int:
                     },
                 )
             if upload.status_code not in {200, 201}:
-                print(f"PDF upload failed with HTTP {upload.status_code}.")
+                _print_failure(upload, "PDF upload failed.")
                 return 1
 
             document = upload.json()
             if document["status"] != "ready":
-                print("PDF embeddings are not ready; check the document status.")
+                print(
+                    f"PDF embeddings are not ready. HTTP {upload.status_code}. "
+                    f"Request ID: {_request_id(upload)}"
+                )
                 return 1
 
             response = client.post(
@@ -69,33 +104,52 @@ def main() -> int:
                 },
             )
             if response.status_code != 200:
-                error = response.json().get("error", {})
+                try:
+                    body = response.json()
+                except ValueError:
+                    body = {}
+                error = body.get("error", {}) if isinstance(body, dict) else {}
+                if not isinstance(error, dict):
+                    error = {}
+                message = "Chat request failed."
                 if error.get("code") == "CHAT_MODEL_NOT_FOUND":
-                    print(
+                    message = (
                         "Gemini returned 404 for GEMINI_CHAT_MODEL. "
                         "Set GEMINI_CHAT_MODEL to a model available to your API key."
                     )
                 elif error.get("code") == "CHAT_QUOTA_EXCEEDED":
-                    print("Gemini quota was reached; try again in a minute.")
-                else:
-                    print(f"Chat smoke test failed with HTTP {response.status_code}.")
+                    message = "Gemini quota was reached; try again in a minute."
+                elif error.get("code") == "CHAT_SEARCH_UNAVAILABLE":
+                    message = (
+                        "Question embedding failed; document search is unavailable."
+                    )
+                elif error.get("code") == "CHAT_UNAVAILABLE":
+                    message = "Gemini answer generation is temporarily unavailable."
+                _print_failure(response, message)
                 return 1
 
             result = response.json()
-            if (
-                result["answer"] == _NO_CONTEXT_ANSWER
-                or not result["citations"]
-            ):
-                print(
-                    "No cited answer was produced, so Gemini may not have been "
-                    "called. Try a question matching the PDF text."
-                )
+            print(f"HTTP status: {response.status_code}")
+            print("Answer:")
+            print(result["answer"])
+            print("Citations:")
+            citations = result.get("citations", [])
+            if not citations:
+                print("  (none)")
+                if result["answer"] == _NO_CONTEXT_ANSWER:
+                    print(
+                        "No matching context was found; the fixed fallback was "
+                        "returned without an LLM answer."
+                    )
                 return 1
-
-            print(
-                "Gemini chat call succeeded with "
-                f"{len(result['citations'])} validated citation(s)."
-            )
+            for citation in citations:
+                snippet = " ".join(citation["snippet"].split())
+                if len(snippet) > 200:
+                    snippet = f"{snippet[:197]}..."
+                print(
+                    f"  [{citation['number']}] {citation['filename']} "
+                    f"page {citation['page_number']}: {snippet}"
+                )
     except httpx.HTTPError:
         print("Could not reach the local API; no connection details were logged.")
         return 1

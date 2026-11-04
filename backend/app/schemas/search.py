@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class SearchRequest(BaseModel):
     query: str = Field(min_length=1, max_length=4000)
     top_k: int = Field(default=5, ge=1)
+    document_ids: list[UUID] | None = Field(default=None, max_length=100)
+    min_similarity: float | None = Field(default=None, ge=-1, le=1)
 
     @field_validator("query")
     @classmethod

@@ -90,7 +90,13 @@ class ChatService:
                 client=self.embedding_client,
                 settings=self.settings,
             ).embed_query(request.question)
-        except EmbeddingProviderError:
+        except EmbeddingProviderError as error:
+            logger.warning(
+                "Chat embedding stage failed",
+                request_id=request_id,
+                retry_count=error.retry_count,
+                elapsed_ms=round((perf_counter() - started) * 1000),
+            )
             raise ChatError(
                 503,
                 "CHAT_SEARCH_UNAVAILABLE",
@@ -129,10 +135,10 @@ class ChatService:
                 break
             except LLMOutputTruncatedError:
                 logger.warning(
-                    "Chat generation was truncated",
+                    "Chat generation stage failed",
                     request_id=request_id,
-                    retrieved_chunks=len(sources),
-                    provider_attempt=attempt,
+                    retry_count=attempt - 1,
+                    elapsed_ms=round((perf_counter() - started) * 1000),
                 )
                 raise ChatError(
                     502,
@@ -140,6 +146,12 @@ class ChatService:
                     "The answer was cut off before it was complete. Try a shorter question.",
                 ) from None
             except LLMProviderError as error:
+                logger.warning(
+                    "Chat generation stage failed",
+                    request_id=request_id,
+                    retry_count=attempt - 1,
+                    elapsed_ms=round((perf_counter() - started) * 1000),
+                )
                 retryable = error.retryable and (
                     error.status_code == 429
                     or error.status_code is None
@@ -148,13 +160,6 @@ class ChatService:
                 if retryable and attempt < self.settings.chat_max_attempts:
                     self._sleep(self._retry_delay(attempt, error))
                     continue
-                logger.warning(
-                    "Chat provider request failed",
-                    request_id=request_id,
-                    retrieved_chunks=len(sources),
-                    provider_attempt=attempt,
-                    provider_status=error.status_code,
-                )
                 if error.status_code == 429:
                     raise ChatError(
                         429,

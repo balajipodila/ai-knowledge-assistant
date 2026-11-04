@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.ai.dependencies import get_embedding_client, get_llm_client
-from app.ai.errors import LLMOutputTruncatedError, LLMProviderError
+from app.ai.errors import (
+    EmbeddingProviderError,
+    LLMOutputTruncatedError,
+    LLMProviderError,
+)
 from app.ai.fakes import FakeEmbeddingClient, FakeLLMClient
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
@@ -188,6 +192,33 @@ def test_chat_without_matching_chunks_returns_fixed_fallback_without_llm_call(
     assert llm_client.prompts == []
 
 
+def test_search_can_scope_document_and_override_threshold_for_measurement(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+) -> None:
+    client, settings, _, _, search_calls = chat_client
+    user, document, _ = _create_result(client)
+
+    response = cast(ChatHttpClient, client).post(
+        "/search",
+        json={
+            "query": "What is in this document?",
+            "top_k": 5,
+            "document_ids": [str(document.id)],
+            "min_similarity": -1.0,
+        },
+        headers={
+            "Authorization": "Bearer " + create_access_token(user.id, settings)
+        },
+    )
+
+    assert response.status_code == 200
+    assert search_calls[-1]["user_id"] == user.id
+    assert search_calls[-1]["document_ids"] == [document.id]
+    assert search_calls[-1]["top_k"] == 5
+    assert search_calls[-1]["min_similarity"] == -1.0
+    assert settings.search_min_similarity == 0.0
+
+
 def test_chat_keeps_only_retrieved_citations_and_drops_invented_numbers(
     chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
 ) -> None:
@@ -331,6 +362,7 @@ def test_chat_retries_transient_server_errors(
 def test_chat_exhausted_quota_is_friendly_429_not_500(
     chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     client, settings, llm_client, search_rows, _ = chat_client
     user, document, chunk = _create_result(client)
@@ -359,6 +391,45 @@ def test_chat_exhausted_quota_is_friendly_429_not_500(
     assert response.json()["error"]["code"] == "CHAT_QUOTA_EXCEEDED"
     assert "try again in a minute" in response.json()["error"]["message"].lower()
     assert "Traceback" not in response.text
+    captured = capsys.readouterr()
+    log_output = captured.out + captured.err
+    assert "Chat generation stage failed" in log_output
+    assert "retry_count" in log_output
+    assert "elapsed_ms" in log_output
+    assert "What does it say?" not in log_output
+
+
+def test_chat_logs_embedding_failure_without_question_text(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    client, settings, _, _, _ = chat_client
+    user, _, _ = _create_result(client)
+
+    class FailingEmbeddingClient(FixedQueryEmbeddingClient):
+        def embed(self, text: str) -> list[float]:
+            del text
+            raise EmbeddingProviderError("provider unavailable", retryable=False)
+
+    client.app.dependency_overrides[get_embedding_client] = (
+        lambda: FailingEmbeddingClient()
+    )
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "private-question-marker"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "CHAT_SEARCH_UNAVAILABLE"
+    captured = capsys.readouterr()
+    log_output = captured.out + captured.err
+    assert "Chat embedding stage failed" in log_output
+    assert "retry_count" in log_output
+    assert "elapsed_ms" in log_output
+    assert response.headers["X-Request-ID"] in log_output
+    assert "private-question-marker" not in log_output
 
 
 def test_chat_does_not_return_truncated_generation(

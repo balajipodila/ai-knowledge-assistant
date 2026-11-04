@@ -255,6 +255,7 @@ class EmbeddingService:
                 return vectors
             except EmbeddingProviderError as error:
                 if not error.retryable or attempt + 1 >= self.settings.embedding_max_attempts:
+                    error.retry_count = attempt
                     raise
                 delay = min(
                     self.settings.embedding_backoff_base_seconds * (2**attempt),
