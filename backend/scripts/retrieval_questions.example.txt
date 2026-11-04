@@ -1,0 +1,8 @@
+relevant: What is machine learning?
+relevant: How does a model learn patterns from data?
+relevant: What kind of data can be used to train a model?
+relevant: How is machine learning different from traditional programming?
+offtopic: What is the capital of Australia?
+offtopic: How do I bake a sourdough loaf?
+offtopic: Who won the last World Cup?
+offtopic: What are the best hiking trails near a beach?
