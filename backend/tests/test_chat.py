@@ -57,7 +57,8 @@ def chat_client(
         JWT_SECRET_KEY=_TEST_SECRET,
         GEMINI_CHAT_MODEL="test-model",
         CHAT_MAX_OUTPUT_TOKENS=2048,
-        CHAT_TIMEOUT_SECONDS=5,
+        CHAT_GENERATION_DEADLINE_SECONDS=30,
+        CHAT_ATTEMPT_TIMEOUT_SECONDS=15,
         CHAT_MAX_QUESTION_CHARS=2000,
         CHAT_MAX_CONTEXT_CHUNKS=5,
         CHAT_MAX_CONTEXT_CHARS=12000,
@@ -359,6 +360,131 @@ def test_chat_retries_transient_server_errors(
     assert delays == [settings.chat_backoff_base_seconds]
 
 
+def test_chat_504_uses_configured_fallback_model(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+) -> None:
+    client, settings, llm_client, search_rows, _ = chat_client
+    user, document, chunk = _create_result(client)
+    search_rows.append((chunk, document, 0.91))
+    settings.gemini_chat_fallback_model = "confirmed-fallback-model"
+    settings.chat_max_attempts = 1
+    llm_client.responses = [
+        LLMProviderError(
+            "gateway timeout",
+            retryable=True,
+            status_code=504,
+        ),
+        "Recovered answer [1].",
+    ]
+
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "What does it say?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "Recovered answer [1]."
+    assert llm_client.calls == [
+        {"model": "test-model", "timeout_seconds": 15},
+        {"model": "confirmed-fallback-model", "timeout_seconds": 15},
+    ]
+
+
+def test_chat_generation_deadline_stops_further_attempts(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, settings, llm_client, search_rows, _ = chat_client
+    user, document, chunk = _create_result(client)
+    search_rows.append((chunk, document, 0.91))
+    settings.chat_generation_deadline_seconds = 30
+    settings.chat_attempt_timeout_seconds = 15
+    settings.chat_max_attempts = 4
+    settings.chat_backoff_base_seconds = 1
+    settings.chat_backoff_max_seconds = 1
+    clock = [0.0]
+    monkeypatch.setattr("app.services.chat.perf_counter", lambda: clock[0])
+    monkeypatch.setattr(
+        "app.services.chat.time.sleep",
+        lambda delay: clock.__setitem__(0, clock[0] + delay),
+    )
+
+    class SlowFailingFake(FakeLLMClient):
+        def generate(
+            self,
+            prompt: str,
+            *,
+            system_instruction: str = "",
+            model: str | None = None,
+            timeout_seconds: float | None = None,
+        ) -> str:
+            try:
+                return super().generate(
+                    prompt,
+                    system_instruction=system_instruction,
+                    model=model,
+                    timeout_seconds=timeout_seconds,
+                )
+            finally:
+                clock[0] += timeout_seconds or 0
+
+    slow_client = SlowFailingFake(
+        responses=[
+            LLMProviderError("temporary failure", retryable=True, status_code=503)
+            for _ in range(4)
+        ]
+    )
+    client.app.dependency_overrides[get_llm_client] = lambda: slow_client
+
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "What does it say?"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "CHAT_UNAVAILABLE"
+    assert len(slow_client.calls) == 2
+    assert slow_client.calls[0]["timeout_seconds"] == 15
+    assert slow_client.calls[1]["timeout_seconds"] == 14
+    assert clock[0] == 30
+
+
+def test_chat_fallback_disabled_preserves_primary_failure_behavior(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, settings, llm_client, search_rows, _ = chat_client
+    user, document, chunk = _create_result(client)
+    search_rows.append((chunk, document, 0.91))
+    settings.gemini_chat_fallback_model = None
+    settings.chat_backoff_base_seconds = 0
+    llm_client.responses = [
+        LLMProviderError(
+            "gateway timeout",
+            retryable=True,
+            status_code=504,
+        )
+        for _ in range(settings.chat_max_attempts)
+    ]
+    monkeypatch.setattr("app.services.chat.time.sleep", lambda _delay: None)
+
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "What does it say?"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "CHAT_UNAVAILABLE"
+    assert len(llm_client.calls) == settings.chat_max_attempts
+    assert all(call["model"] == "test-model" for call in llm_client.calls)
+
+
 def test_chat_exhausted_quota_is_friendly_429_not_500(
     chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
     monkeypatch: pytest.MonkeyPatch,
@@ -393,8 +519,10 @@ def test_chat_exhausted_quota_is_friendly_429_not_500(
     assert "Traceback" not in response.text
     captured = capsys.readouterr()
     log_output = captured.out + captured.err
-    assert "Chat generation stage failed" in log_output
-    assert "retry_count" in log_output
+    assert "Chat generation attempt failed" in log_output
+    assert "attempt_number" in log_output
+    assert "status_code" in log_output
+    assert "model_role" in log_output
     assert "elapsed_ms" in log_output
     assert "What does it say?" not in log_output
 

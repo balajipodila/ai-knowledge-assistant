@@ -15,10 +15,24 @@ class FakeLLMClient(LLMClient):
         self.responses = list(responses)
         self.prompts: list[str] = []
         self.system_instructions: list[str] = []
+        self.calls: list[dict[str, str | float | None]] = []
 
-    def generate(self, prompt: str, *, system_instruction: str = "") -> str:
+    def generate(
+        self,
+        prompt: str,
+        *,
+        system_instruction: str = "",
+        model: str | None = None,
+        timeout_seconds: float | None = None,
+    ) -> str:
         self.prompts.append(prompt)
         self.system_instructions.append(system_instruction)
+        self.calls.append(
+            {
+                "model": model,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
         if self.responses:
             response = self.responses.pop(0)
             if isinstance(response, Exception):

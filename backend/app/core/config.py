@@ -38,8 +38,10 @@ class Settings(BaseSettings):
     search_max_top_k: int = Field(default=20, ge=1, le=100)
     search_min_similarity: float = Field(default=0.0, ge=-1, le=1)
     gemini_chat_model: str = "gemini-3.8-flash"
+    gemini_chat_fallback_model: str | None = Field(default=None, min_length=1)
     chat_max_output_tokens: int = Field(default=2048, ge=1, le=65536)
-    chat_timeout_seconds: int = Field(default=30, ge=1, le=300)
+    chat_generation_deadline_seconds: int = Field(default=30, ge=1, le=300)
+    chat_attempt_timeout_seconds: int = Field(default=15, ge=1, le=300)
     chat_max_question_chars: int = Field(default=2000, ge=1, le=4000)
     chat_max_context_chunks: int = Field(default=5, ge=1, le=20)
     chat_max_context_chars: int = Field(default=12000, ge=256, le=100000)

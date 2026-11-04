@@ -163,8 +163,13 @@ citation labels that do not match retrieved chunks and returns citations with
 document name, page, and a snippet capped at 300 characters. Document text is
 passed as delimited untrusted data; system instructions tell the model to ignore
 instructions inside document text. The request size, retrieved chunk count,
-context size, output tokens, timeout, and retry delays are bounded by the
-`GEMINI_CHAT_MODEL` and `CHAT_*` settings in `.env.example`.
+context size, output tokens, generation deadline, per-attempt timeout, and retry
+delays are bounded by `GEMINI_CHAT_MODEL` and `CHAT_*` settings in
+`.env.example`. `CHAT_GENERATION_DEADLINE_SECONDS` defaults to 30 seconds across
+primary and optional fallback calls; `CHAT_ATTEMPT_TIMEOUT_SECONDS` defaults
+to 15 seconds per provider call. `GEMINI_CHAT_FALLBACK_MODEL` is optional and
+unset by default. Configure it only after confirming the model is available to
+your API key in AI Studio.
 
 The default model is `gemini-3.8-flash`. Google lists it as a stable model with
 a 1,048,576-token input limit and 65,536-token output limit ([official model
@@ -172,8 +177,10 @@ documentation](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash));
 the app defaults its own output cap to 2,048 tokens and uses low thinking.
 Google lists standard input/output as free of charge on the Free tier, but rate
 limits vary by project and account; check the current limits in Google AI
-Studio. The API retries transient 429/5xx errors with bounded backoff and
-respects `Retry-After` up to the configured cap.
+Studio. The API retries transient 429/5xx errors, including 504, with bounded backoff
+and respects `Retry-After` up to the configured cap. If configured, a fallback
+model is tried for retryable provider failures within the same total generation
+deadline.
 
 An optional manual smoke test uploads a synthetic PDF and sends a real chat
 request through the running API:

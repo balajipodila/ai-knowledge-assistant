@@ -108,13 +108,19 @@ class GeminiEmbeddingClient(EmbeddingClient):
 class GeminiLLMClient(LLMClient):
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self._client: genai.Client | None = None
 
-    def generate(self, prompt: str, *, system_instruction: str = "") -> str:
-        client = self._get_client()
+    def generate(
+        self,
+        prompt: str,
+        *,
+        system_instruction: str = "",
+        model: str | None = None,
+        timeout_seconds: float | None = None,
+    ) -> str:
+        client = self._get_client(timeout_seconds)
         try:
             response = client.models.generate_content(
-                model=self.settings.gemini_chat_model,
+                model=model or self.settings.gemini_chat_model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
@@ -136,6 +142,8 @@ class GeminiLLMClient(LLMClient):
             raise LLMProviderError(
                 "Gemini chat service could not be reached.", retryable=True
             ) from None
+        finally:
+            client.close()
 
         candidates = response.candidates or []
         if candidates and candidates[0].finish_reason == types.FinishReason.MAX_TOKENS:
@@ -146,17 +154,20 @@ class GeminiLLMClient(LLMClient):
             )
         return response.text
 
-    def _get_client(self) -> genai.Client:
+    def _get_client(self, timeout_seconds: float | None = None) -> genai.Client:
         if self.settings.gemini_api_key is None:
             raise LLMProviderError(
                 "Gemini chat is not configured.", status_code=503
             )
-        if self._client is None:
-            self._client = genai.Client(
-                api_key=self.settings.gemini_api_key.get_secret_value(),
-                http_options=types.HttpOptions(
-                    timeout=self.settings.chat_timeout_seconds * 1000,
-                    retry_options=types.HttpRetryOptions(attempts=1),
-                ),
-            )
-        return self._client
+        timeout = (
+            self.settings.chat_attempt_timeout_seconds
+            if timeout_seconds is None
+            else timeout_seconds
+        )
+        return genai.Client(
+            api_key=self.settings.gemini_api_key.get_secret_value(),
+            http_options=types.HttpOptions(
+                timeout=max(1, round(timeout * 1000)),
+                retry_options=types.HttpRetryOptions(attempts=1),
+            ),
+        )

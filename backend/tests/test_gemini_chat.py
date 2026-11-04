@@ -15,7 +15,7 @@ def _settings() -> Settings:
         GEMINI_API_KEY="test-only-api-key",
         GEMINI_CHAT_MODEL="gemini-test-model",
         CHAT_MAX_OUTPUT_TOKENS=2048,
-        CHAT_TIMEOUT_SECONDS=11,
+        CHAT_ATTEMPT_TIMEOUT_SECONDS=11,
     )
 
 
@@ -39,24 +39,29 @@ def test_gemini_client_uses_model_timeout_output_cap_and_low_thinking(
             captured["client"] = kwargs
             self.models = Models()
 
+        def close(self) -> None:
+            captured["closed"] = True
+
     monkeypatch.setattr("app.ai.gemini.genai.Client", ClientStub)
     client = GeminiLLMClient(_settings())
 
     result = client.generate(
         "context",
         system_instruction="Answer only from context.",
+        model="selected-test-model",
+        timeout_seconds=7,
     )
 
     client_options = captured["client"]
     assert isinstance(client_options, dict)
     http_options = client_options["http_options"]
     assert isinstance(http_options, types.HttpOptions)
-    assert http_options.timeout == 11000
+    assert http_options.timeout == 7000
     assert http_options.retry_options is not None
     assert http_options.retry_options.attempts == 1
     request = captured["request"]
     assert isinstance(request, dict)
-    assert request["model"] == "gemini-test-model"
+    assert request["model"] == "selected-test-model"
     generation_config = request["config"]
     assert isinstance(generation_config, types.GenerateContentConfig)
     assert generation_config.max_output_tokens == 2048
@@ -64,6 +69,7 @@ def test_gemini_client_uses_model_timeout_output_cap_and_low_thinking(
     assert generation_config.thinking_config is not None
     assert generation_config.thinking_config.thinking_level == types.ThinkingLevel.LOW
     assert result == "Grounded answer [1]."
+    assert captured["closed"] is True
 
 
 def test_gemini_client_rejects_max_token_finish_reason(
@@ -81,6 +87,9 @@ def test_gemini_client_rejects_max_token_finish_reason(
     class ClientStub:
         def __init__(self, **_kwargs: object) -> None:
             self.models = Models()
+
+        def close(self) -> None:
+            pass
 
     monkeypatch.setattr("app.ai.gemini.genai.Client", ClientStub)
 
@@ -107,6 +116,9 @@ def test_gemini_client_preserves_retry_after_without_exposing_provider_text(
     class ClientStub:
         def __init__(self, **_kwargs: object) -> None:
             self.models = Models()
+
+        def close(self) -> None:
+            pass
 
     monkeypatch.setattr("app.ai.gemini.genai.Client", ClientStub)
 
