@@ -1,32 +1,43 @@
 import Link from "next/link";
+import { AnimationScene, type AnimationSceneName } from "@/components/animation-scene";
 
-const steps = [
+const steps: {
+  scene: AnimationSceneName;
+  title: string;
+  description: string;
+}[] = [
   {
+    scene: "pdf",
     title: "Upload a PDF",
     description:
       "Add a document you want to explore. Your account is required to see and use your own documents.",
   },
   {
+    scene: "chunks",
     title: "Extract and split the text",
     description:
       "The app reads selectable PDF text and divides it into smaller passages, keeping page information with each passage.",
   },
   {
+    scene: "embedding",
     title: "Create embeddings",
     description:
       "Gemini turns each passage into a list of numbers, called an embedding, that represents aspects of its meaning.",
   },
   {
+    scene: "vector",
     title: "Search with pgvector",
     description:
       "PostgreSQL and pgvector compare the question with your passages and return the closest matches for your account.",
   },
   {
+    scene: "search",
     title: "Draft an answer",
     description:
       "Gemini receives the question and retrieved passages. The prompt asks it to answer from that context and say when it is insufficient.",
   },
   {
+    scene: "answer",
     title: "Show the sources",
     description:
       "The answer can point to numbered passages. The API checks citation numbers against the passages actually retrieved.",
@@ -62,7 +73,9 @@ export default function Home() {
       <section aria-labelledby="hero-title" className="hero">
         <div>
           <p className="eyebrow">A calmer way to explore your PDFs</p>
-          <h1 id="hero-title">Find the useful pages in what you already know.</h1>
+          <h1 className="metallic-heading" id="hero-title">
+            Find the useful pages in what you already know.
+          </h1>
           <p className="hero-copy">
             Upload a PDF, ask a question in everyday language, and explore an
             answer with references to the passages it used.
@@ -86,6 +99,7 @@ export default function Home() {
           aria-label="Illustrative answer preview"
           className="glass-panel glass-blur preview-card"
         >
+          <AnimationScene scene="hero" />
           <span className="preview-label">Illustrative example — not real output</span>
           <p className="preview-question">Example question</p>
           <p className="preview-answer">
@@ -107,7 +121,7 @@ export default function Home() {
 
       <section aria-labelledby="how-title" className="landing-section">
         <p className="eyebrow">From document to answer</p>
-        <h2 className="section-heading" id="how-title">
+        <h2 className="section-heading metallic-heading" id="how-title">
           How it works
         </h2>
         <p className="section-intro">
@@ -118,6 +132,7 @@ export default function Home() {
         <ol className="steps-grid">
           {steps.map((step, index) => (
             <li className="glass-panel step-card" key={step.title}>
+              <AnimationScene scene={step.scene} />
               <span aria-hidden="true" className="step-number">
                 {String(index + 1).padStart(2, "0")}
               </span>
@@ -130,7 +145,7 @@ export default function Home() {
 
       <section aria-labelledby="trust-title" className="landing-section">
         <p className="eyebrow">Designed for grounded answers</p>
-        <h2 className="section-heading" id="trust-title">
+        <h2 className="section-heading metallic-heading" id="trust-title">
           Why answers are easier to check
         </h2>
         <p className="section-intro">
@@ -138,6 +153,12 @@ export default function Home() {
           can never make a mistake. Check the cited passages when accuracy
           matters.
         </p>
+        <div className="trust-visual-row">
+          <AnimationScene scene="vault" />
+          <p className="helper-text">
+            Illustration of account-scoped document access; it does not represent live user activity.
+          </p>
+        </div>
         <div className="trust-grid">
           <article className="glass-panel trust-card">
             <h3>Answers use retrieved context</h3>
@@ -174,7 +195,7 @@ export default function Home() {
 
       <section aria-labelledby="features-title" className="landing-section">
         <p className="eyebrow">A focused workspace</p>
-        <h2 className="section-heading" id="features-title">
+        <h2 className="section-heading metallic-heading" id="features-title">
           The tools to go from a file to a source
         </h2>
         <div className="feature-grid">
@@ -189,7 +210,7 @@ export default function Home() {
 
       <section aria-labelledby="architecture-title" className="landing-section">
         <p className="eyebrow">A small, understandable stack</p>
-        <h2 className="section-heading" id="architecture-title">
+        <h2 className="section-heading metallic-heading" id="architecture-title">
           How the pieces connect
         </h2>
         <div
@@ -235,7 +256,7 @@ export default function Home() {
 
       <section aria-labelledby="limitations-title" className="landing-section">
         <p className="eyebrow">What to expect</p>
-        <h2 className="section-heading" id="limitations-title">
+        <h2 className="section-heading metallic-heading" id="limitations-title">
           Honest limitations
         </h2>
         <ul className="limitation-list">

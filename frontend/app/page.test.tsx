@@ -5,7 +5,7 @@ import Home from "./page";
 
 describe("home page", () => {
   it("explains the product, Gemini data use, and its grounded-answer design", () => {
-    render(<Home />);
+    const { container } = render(<Home />);
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "Find the useful pages in what you already know.",
@@ -26,6 +26,7 @@ describe("home page", () => {
     }
     expect(screen.getByText(/without calling the chat generation model/i)).toBeTruthy();
     expect(screen.getByText(/Illustrative example — not real output/i)).toBeTruthy();
+    expect(container.querySelectorAll(".animation-scene[aria-hidden='true']")).toHaveLength(8);
     expect(screen.getByRole("link", { name: "Create an account" }).getAttribute("href"))
       .toBe("/signup");
     expect(screen.getByRole("link", { name: "Log in" }).getAttribute("href"))

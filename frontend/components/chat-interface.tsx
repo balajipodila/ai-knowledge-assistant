@@ -34,6 +34,19 @@ function citationId(turnIndex: number, number: number): string {
   return `chat-citation-${turnIndex}-${number}`;
 }
 
+function NoticeIcon({ kind }: { kind: "error" | "warning" | "info" }) {
+  const paths = {
+    error: <><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></>,
+    warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v4m0 3h.01" /></>,
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></>,
+  };
+  return (
+    <svg aria-hidden="true" className="notice-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+      {paths[kind]}
+    </svg>
+  );
+}
+
 function friendlyChatError(error: unknown): { message: string; retryable: boolean } {
   if (!(error instanceof ApiError)) {
     return {
@@ -127,7 +140,7 @@ function AnswerText({
         pieces.push(
           <button
             aria-label={`Jump to citation ${number}, ${citation.filename}, page ${citation.page_number}`}
-            className="font-semibold text-cyan-800 underline underline-offset-2"
+            className="citation-link font-semibold underline underline-offset-2"
             key={`marker-${turnIndex}-${key++}`}
             onClick={() => {
               const target = citationRefs.current.get(citationId(turnIndex, number));
@@ -152,7 +165,7 @@ function AnswerText({
   }
 
   if (lastIndex < answer.length) pieces.push(answer.slice(lastIndex));
-  return <p className="whitespace-pre-wrap leading-7 text-slate-800">{pieces}</p>;
+  return <p className="answer-text whitespace-pre-wrap leading-7">{pieces}</p>;
 }
 
 export function ChatInterface() {
@@ -353,37 +366,40 @@ export function ChatInterface() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-800">
+        <p className="eyebrow">
           Ask your documents
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+        <h1 className="page-title mt-2 text-3xl font-bold tracking-tight">
           Cited chat
         </h1>
-        <p className="mt-3 text-slate-600">
+        <p className="page-description mt-3">
           Answers are grounded in the documents you choose and include source citations.
         </p>
-        <p className="mt-2 text-sm text-slate-500">
+        <p className="helper-text mt-2 text-sm">
           Each question is answered independently.
         </p>
       </header>
 
       <section
         aria-labelledby="document-filter-heading"
-        className="mt-7 rounded-2xl border border-slate-200 bg-white p-5"
+        className="glass-panel mt-7 p-5"
       >
-        <h2 id="document-filter-heading" className="font-semibold text-slate-950">
+        <h2 id="document-filter-heading" className="section-subheading font-semibold">
           Search in documents
         </h2>
         {documentsLoading && (
-          <p className="mt-3 text-sm text-slate-600" role="status">
+          <p className="helper-text mt-3 text-sm" role="status">
             Loading ready documents…
           </p>
         )}
         {documentsError && (
           <div className="mt-3" role="alert">
-            <p className="text-sm text-rose-800">{documentsError}</p>
+            <p className="notice notice-error text-sm">
+              <NoticeIcon kind="error" />
+              {documentsError}
+            </p>
             <button
-              className="mt-2 text-sm font-semibold text-cyan-800 underline"
+              className="citation-link mt-2 text-sm font-semibold underline"
               onClick={() => void refreshDocuments()}
               type="button"
             >
@@ -392,10 +408,10 @@ export function ChatInterface() {
           </div>
         )}
         {!documentsLoading && !documentsError && readyDocuments.length === 0 && (
-          <div className="mt-3 text-sm text-slate-700">
+          <div className="page-description mt-3 text-sm">
             <p>You do not have any ready documents to search yet.</p>
             <Link
-              className="mt-2 inline-block font-semibold text-cyan-800 underline underline-offset-2"
+              className="citation-link mt-2 inline-block font-semibold underline underline-offset-2"
               href="/documents"
             >
               Go to Documents
@@ -405,11 +421,11 @@ export function ChatInterface() {
         {!documentsLoading && readyDocuments.length > 0 && (
           <>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-slate-600">
+              <p className="helper-text text-sm">
                 Leave all unchecked to search every ready document.
               </p>
               <button
-                className="text-sm font-semibold text-cyan-800 underline underline-offset-2"
+                className="citation-link text-sm font-semibold underline underline-offset-2"
                 disabled={documentsLoading}
                 onClick={() => void refreshDocuments()}
                 type="button"
@@ -420,14 +436,14 @@ export function ChatInterface() {
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {readyDocuments.map((document) => (
                 <li key={document.id}>
-                  <label className="flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
+                  <label className="document-choice flex min-w-0 cursor-pointer items-start gap-3 rounded-lg p-3">
                     <input
                       checked={selectedIds.includes(document.id)}
-                      className="mt-1 h-4 w-4 accent-cyan-800"
+                      className="document-checkbox mt-1 h-4 w-4"
                       onChange={() => toggleDocument(document.id)}
                       type="checkbox"
                     />
-                    <span className="min-w-0 truncate text-sm font-medium text-slate-800" title={document.filename}>
+                    <span className="document-filename min-w-0 truncate text-sm font-medium" title={document.filename}>
                       {document.filename}
                     </span>
                   </label>
@@ -440,9 +456,9 @@ export function ChatInterface() {
 
       <section aria-label="Conversation" className="mt-7">
         {turns.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-            <h2 className="font-semibold text-slate-900">Ask your first question</h2>
-            <p className="mt-2 text-sm text-slate-600">
+          <div className="glass-panel empty-state p-8 text-center">
+            <h2 className="section-subheading font-semibold">Ask your first question</h2>
+            <p className="page-description mt-2 text-sm">
               Choose documents above if you want to limit the search.
             </p>
           </div>
@@ -458,44 +474,50 @@ export function ChatInterface() {
                 key={turn.index}
                 ref={isLatest ? latestTurnRef : undefined}
               >
-                <div className="ml-auto max-w-3xl rounded-2xl bg-slate-900 p-4 text-white sm:p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                <div className="user-message ml-auto max-w-3xl rounded-2xl p-4 sm:p-5">
+                  <p className="user-message-label text-xs font-semibold uppercase tracking-wide">
                     You asked
                   </p>
                   <p className="mt-2 whitespace-pre-wrap leading-7">{turn.question}</p>
                 </div>
 
                 {turn.isLoading && (
-                  <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4" role="status">
-                    <p className="font-semibold text-cyan-950">Thinking…</p>
-                    <p className="mt-1 text-sm text-cyan-900">
-                      Searching your documents and preparing a cited answer.
-                    </p>
-                    <button
-                      className="mt-3 rounded-lg border border-cyan-800 px-3 py-2 text-sm font-semibold text-cyan-950 hover:bg-white"
-                      onClick={cancelRequest}
-                      type="button"
-                    >
-                      Cancel response
-                    </button>
+                  <div className="notice notice-info rounded-2xl p-4" role="status">
+                    <NoticeIcon kind="info" />
+                    <div className="min-w-0">
+                      <p className="font-semibold">Thinking…</p>
+                      <p className="helper-text mt-1 text-sm">
+                        Searching your documents and preparing a cited answer.
+                      </p>
+                      <button
+                        className="button-secondary mt-3 rounded-lg px-3 py-2 text-sm"
+                        onClick={cancelRequest}
+                        type="button"
+                      >
+                        Cancel response
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {turn.error && (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4" role="alert">
-                    <p className="text-sm text-rose-900">{turn.error}</p>
-                    {turn.retryable && (
-                      <button
-                        className="mt-3 rounded-lg border border-rose-800 px-3 py-2 text-sm font-semibold text-rose-900 hover:bg-white"
-                        disabled={isLoading}
-                        onClick={() =>
-                          void sendQuestion(turn.index, turn.question, turn.documentIds)
-                        }
-                        type="button"
-                      >
-                        Retry this question
-                      </button>
-                    )}
+                  <div className="notice notice-error rounded-2xl p-4" role="alert">
+                    <NoticeIcon kind="error" />
+                    <div className="min-w-0">
+                      <p className="text-sm">{turn.error}</p>
+                      {turn.retryable && (
+                        <button
+                          className="button-secondary mt-3 rounded-lg px-3 py-2 text-sm"
+                          disabled={isLoading}
+                          onClick={() =>
+                            void sendQuestion(turn.index, turn.question, turn.documentIds)
+                          }
+                          type="button"
+                        >
+                          Retry this question
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -503,21 +525,24 @@ export function ChatInterface() {
                   <div
                     className={`rounded-2xl border p-4 sm:p-5 ${
                       notFound
-                        ? "border-amber-300 bg-amber-50"
-                        : "border-slate-200 bg-white"
+                        ? "notice notice-warning"
+                        : "glass-panel"
                     }`}
                   >
                     {notFound ? (
                       <>
-                        <h2 className="font-semibold text-amber-950">No matching information found</h2>
-                        <p className="mt-2 text-slate-900">{response.answer}</p>
-                        <p className="mt-2 text-sm text-amber-900">
-                          Try rephrasing your question or upload more relevant documents.
-                        </p>
+                        <NoticeIcon kind="warning" />
+                        <div className="min-w-0">
+                          <h2 className="font-semibold">No matching information found</h2>
+                          <p className="mt-2">{response.answer}</p>
+                          <p className="helper-text mt-2 text-sm">
+                            Try rephrasing your question or upload more relevant documents.
+                          </p>
+                        </div>
                       </>
                     ) : (
                       <>
-                        <h2 className="font-semibold text-slate-950">Answer</h2>
+                        <h2 className="section-subheading font-semibold">Answer</h2>
                         <div className="mt-3">
                           <AnswerText
                             answer={response.answer}
@@ -529,16 +554,16 @@ export function ChatInterface() {
                         {response.citations.length > 0 && (
                           <section
                             aria-label="Sources"
-                            className="mt-5 border-t border-slate-200 pt-4"
+                            className="sources-section mt-5 border-t pt-4"
                           >
-                            <h3 className="font-semibold text-slate-900">Sources</h3>
+                            <h3 className="section-subheading font-semibold">Sources</h3>
                             <ol className="mt-3 space-y-3">
                               {response.citations.map((citation) => {
                                 const id = citationId(turn.index, citation.number);
                                 return (
                                   <li
                                     aria-label={`Citation ${citation.number}: ${citation.filename}, page ${citation.page_number}`}
-                                    className="scroll-mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 focus:outline-2 focus:outline-offset-2 focus:outline-cyan-700"
+                                    className="citation-card scroll-mt-6 rounded-xl p-4"
                                     id={id}
                                     key={id}
                                     ref={(element) => {
@@ -547,11 +572,11 @@ export function ChatInterface() {
                                     }}
                                     tabIndex={-1}
                                   >
-                                    <p className="font-semibold text-slate-950">
+                                    <p className="document-filename font-semibold">
                                       [{citation.number}] {citation.filename} — page{" "}
                                       {citation.page_number}
                                     </p>
-                                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                                    <p className="page-description mt-2 whitespace-pre-wrap text-sm leading-6">
                                       {citation.snippet}
                                     </p>
                                   </li>
@@ -574,14 +599,14 @@ export function ChatInterface() {
         {announcement}
       </p>
 
-      <section className="sticky bottom-0 mt-8 border-t border-slate-200 bg-slate-50/95 py-4 backdrop-blur">
-        <label className="block text-sm font-semibold text-slate-800" htmlFor="chat-question">
+      <section className="chat-composer sticky bottom-0 mt-8 border-t py-4">
+        <label className="field-label block text-sm font-semibold" htmlFor="chat-question">
           Your question
         </label>
         <textarea
           aria-describedby={questionError ? "chat-question-error chat-question-count" : "chat-question-count"}
           aria-invalid={Boolean(questionError)}
-          className="mt-2 min-h-24 w-full resize-y rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950"
+          className="input-shell mt-2 min-h-24 w-full resize-y px-4 py-3"
           disabled={isLoading}
           id="chat-question"
           maxLength={CHAT_MAX_QUESTION_CHARS}
@@ -595,7 +620,7 @@ export function ChatInterface() {
         />
         <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
           <p
-            className="text-xs text-slate-600"
+            className="helper-text text-xs"
             id="chat-question-count"
             aria-live="polite"
           >
@@ -603,12 +628,13 @@ export function ChatInterface() {
           </p>
           <div className="flex items-center gap-3">
             {questionError && (
-              <p className="text-sm text-rose-800" id="chat-question-error" role="alert">
+              <p className="notice notice-error text-sm" id="chat-question-error" role="alert">
+                <NoticeIcon kind="error" />
                 {questionError}
               </p>
             )}
             <button
-              className="rounded-lg bg-slate-950 px-5 py-3 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="button-primary rounded-lg px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isLoading || documentsLoading || readyDocuments.length === 0}
               onClick={submitQuestion}
               type="button"

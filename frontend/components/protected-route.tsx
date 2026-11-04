@@ -18,14 +18,14 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   if (status === "checking") {
     return (
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12" aria-live="polite">
-        <p className="text-slate-600">Checking your session…</p>
+        <p className="page-description">Checking your session…</p>
       </main>
     );
   }
   if (status !== "authenticated") {
     return (
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12" aria-live="polite">
-        <p className="text-slate-600">Redirecting to sign in…</p>
+        <p className="page-description">Redirecting to sign in…</p>
       </main>
     );
   }

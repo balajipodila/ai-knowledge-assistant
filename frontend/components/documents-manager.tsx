@@ -32,6 +32,45 @@ function documentStatus(status: string): string {
   }
 }
 
+function statusKind(status: string): "info" | "success" | "error" | "warning" {
+  switch (status) {
+    case "ready":
+      return "success";
+    case "failed":
+      return "error";
+    case "embedding_failed":
+      return "warning";
+    default:
+      return "info";
+  }
+}
+
+function StatusIcon({ kind }: { kind: "info" | "success" | "error" | "warning" }) {
+  const paths = {
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></>,
+    success: <><circle cx="12" cy="12" r="9" /><path d="m8 12 2.5 2.5L16 9" /></>,
+    error: <><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></>,
+    warning: <><path d="m12 3 10 18H2L12 3Z" /><path d="M12 9v4m0 3h.01" /></>,
+  };
+  return (
+    <svg aria-hidden="true" className="status-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+      {paths[kind]}
+    </svg>
+  );
+}
+
+function NoticeIcon({ kind }: { kind: Notice["kind"] }) {
+  if (kind === "progress") {
+    return (
+      <svg aria-hidden="true" className="notice-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    );
+  }
+  return <StatusIcon kind={kind} />;
+}
+
 function formattedDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Date unavailable";
@@ -217,13 +256,13 @@ export function DocumentsManager() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
       <header>
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-800">
+        <p className="eyebrow">
           Your workspace
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">
+        <h1 className="page-title mt-2 text-3xl font-bold tracking-tight">
           Documents
         </h1>
-        <p className="mt-3 max-w-2xl text-slate-600">
+        <p className="page-description mt-3 max-w-2xl">
           Upload PDFs to search and ask questions about them. Uploading includes
           text extraction and embedding, so larger files may take a little while.
         </p>
@@ -231,15 +270,15 @@ export function DocumentsManager() {
 
       <section
         aria-labelledby="upload-heading"
-        className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+        className="glass-panel mt-8 p-5 sm:p-7"
       >
-        <h2 id="upload-heading" className="text-lg font-semibold text-slate-950">
+        <h2 id="upload-heading" className="section-subheading text-lg font-semibold">
           Add a PDF
         </h2>
         <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={handleUpload}>
           <div className="min-w-0 flex-1">
             <label
-              className="block text-sm font-medium text-slate-800"
+              className="field-label block text-sm font-medium"
               htmlFor="document-file"
             >
               Choose a PDF
@@ -247,18 +286,18 @@ export function DocumentsManager() {
             <input
               ref={fileInputRef}
               accept="application/pdf,.pdf"
-              className="mt-2 block w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-semibold file:text-slate-800"
+              className="file-input mt-2 block w-full rounded-lg p-2 text-sm"
               disabled={isUploading}
               id="document-file"
               onChange={handleFileChange}
               type="file"
             />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="helper-text mt-2 text-xs">
               PDF only, up to 10 MiB.
             </p>
           </div>
           <button
-            className="rounded-lg bg-slate-950 px-5 py-3 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="button-primary rounded-lg px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={!selectedFile || isUploading}
             type="submit"
           >
@@ -266,7 +305,8 @@ export function DocumentsManager() {
           </button>
         </form>
         {isUploading && (
-          <p className="mt-4 text-sm text-cyan-900">
+          <p className="notice notice-info mt-4 text-sm" role="status">
+            <StatusIcon kind="info" />
             Processing your PDF. This can take a minute; please keep this page open.
           </p>
         )}
@@ -274,11 +314,11 @@ export function DocumentsManager() {
 
       <section aria-labelledby="list-heading" className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="list-heading" className="text-xl font-semibold text-slate-950">
+          <h2 id="list-heading" className="section-subheading text-xl font-semibold">
             Your files
           </h2>
           <button
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-white disabled:opacity-60"
+            className="button-secondary rounded-lg px-3 py-2 text-sm disabled:opacity-60"
             disabled={isLoading}
             onClick={() => void refreshDocuments()}
             type="button"
@@ -288,35 +328,31 @@ export function DocumentsManager() {
         </div>
 
         {notice && (
-          <p
+          <div
             aria-live={notice.kind === "error" ? "assertive" : "polite"}
-            className={`mt-4 rounded-lg p-3 text-sm ${
-              notice.kind === "error"
-                ? "bg-rose-50 text-rose-800"
-                : notice.kind === "success"
-                  ? "bg-emerald-50 text-emerald-900"
-                  : "bg-cyan-50 text-cyan-900"
-            }`}
+            className={`notice notice-${notice.kind === "progress" ? "info" : notice.kind} mt-4 text-sm`}
             role={notice.kind === "error" ? "alert" : "status"}
           >
+            <NoticeIcon kind={notice.kind} />
             {notice.message}
-          </p>
+          </div>
         )}
 
         {isLoading && documents.length === 0 && (
-          <p className="mt-5 text-slate-600" role="status">
+          <p className="helper-text mt-5" role="status">
             Loading your documents…
           </p>
         )}
         {listError && (
-          <p className="mt-5 rounded-lg bg-rose-50 p-4 text-sm text-rose-800" role="alert">
+          <p className="notice notice-error mt-5 text-sm" role="alert">
+            <StatusIcon kind="error" />
             {listError}
           </p>
         )}
         {!isLoading && !listError && documents.length === 0 && (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-            <h3 className="font-semibold text-slate-900">No documents yet</h3>
-            <p className="mt-2 text-sm text-slate-600">
+          <div className="glass-panel empty-state mt-5 p-8 text-center">
+            <h3 className="section-subheading font-semibold">No documents yet</h3>
+            <p className="page-description mt-2 text-sm">
               Choose a PDF above to add your first document.
             </p>
           </div>
@@ -329,10 +365,10 @@ export function DocumentsManager() {
               const isHighlighted = highlightedDocumentId === document.id;
               return (
                 <li
-                  className={`rounded-xl border bg-white p-4 shadow-sm sm:p-5 ${
+                  className={`document-card glass-panel p-4 sm:p-5 ${
                     isHighlighted
-                      ? "border-cyan-700 ring-2 ring-cyan-200"
-                      : "border-slate-200"
+                      ? "document-card-highlight"
+                      : ""
                   }`}
                   data-highlighted={isHighlighted ? "true" : undefined}
                   data-testid={`document-${document.id}`}
@@ -341,25 +377,27 @@ export function DocumentsManager() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <h3
-                        className="max-w-full truncate font-semibold text-slate-950 sm:max-w-xl"
+                        className="document-filename max-w-full truncate font-semibold sm:max-w-xl"
                         title={document.filename}
                       >
                         {document.filename}
                       </h3>
                       <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex rounded-full border border-slate-300 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-800">
+                        <span className={`status-badge status-${statusKind(document.status)}`}>
+                          <StatusIcon kind={statusKind(document.status)} />
                           {documentStatus(document.status)}
                         </span>
-                        <span className="text-sm text-slate-600">
+                        <span className="helper-text text-sm">
                           {document.page_count}{" "}
                           {document.page_count === 1 ? "page" : "pages"}
                         </span>
-                        <span className="text-sm text-slate-600">
+                        <span className="helper-text text-sm">
                           Added {formattedDate(document.created_at)}
                         </span>
                       </div>
                       {document.failure_reason && (
-                        <p className="mt-3 text-sm text-rose-800">
+                        <p className="notice notice-error mt-3 text-sm">
+                          <StatusIcon kind="error" />
                           Failure reason: {document.failure_reason}
                         </p>
                       )}
@@ -368,7 +406,7 @@ export function DocumentsManager() {
                       {document.status === "embedding_failed" && (
                         <button
                           aria-label={`Retry embedding for ${document.filename}`}
-                          className="rounded-lg border border-cyan-800 px-3 py-2 text-sm font-semibold text-cyan-900 hover:bg-cyan-50 disabled:opacity-60"
+                          className="button-secondary rounded-lg px-3 py-2 text-sm disabled:opacity-60"
                           disabled={isRetrying || isDeleting}
                           onClick={() => void retryEmbedding(document)}
                           type="button"
@@ -378,11 +416,14 @@ export function DocumentsManager() {
                       )}
                       <button
                         aria-label={`Delete ${document.filename}`}
-                        className="rounded-lg border border-rose-300 px-3 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-50 disabled:opacity-60"
+                        className="button-danger rounded-lg px-3 py-2 text-sm disabled:opacity-60"
                         disabled={isDeleting || isRetrying}
                         onClick={() => openDeleteDialog(document)}
                         type="button"
                       >
+                        <svg aria-hidden="true" className="status-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                          <path d="M4 7h16m-10 4v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" />
+                        </svg>
                         {isDeleting ? "Deleting…" : "Delete"}
                       </button>
                     </div>
@@ -398,7 +439,7 @@ export function DocumentsManager() {
         <dialog
           aria-labelledby="delete-dialog-title"
           aria-modal="true"
-          className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-950/40"
+          className="delete-dialog m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl p-0 shadow-xl"
           onCancel={(event) => {
             event.preventDefault();
             closeDeleteDialog();
@@ -412,13 +453,16 @@ export function DocumentsManager() {
             <h2 id="delete-dialog-title" className="text-lg font-semibold">
               Delete document?
             </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              Delete <span className="font-semibold text-slate-900">{deleteTarget.filename}</span>?
-              This cannot be undone.
+            <p className="notice notice-warning mt-3 text-sm leading-6">
+              <StatusIcon kind="warning" />
+              <span>
+                Delete <span className="document-filename font-semibold">{deleteTarget.filename}</span>?
+                This cannot be undone.
+              </span>
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
-                className="rounded-lg border border-slate-300 px-4 py-2 font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-60"
+                className="button-secondary rounded-lg px-4 py-2 disabled:opacity-60"
                 disabled={deletingIds.has(deleteTarget.id)}
                 onClick={closeDeleteDialog}
                 type="button"
@@ -426,11 +470,14 @@ export function DocumentsManager() {
                 Cancel
               </button>
               <button
-                className="rounded-lg bg-rose-700 px-4 py-2 font-semibold text-white hover:bg-rose-800 disabled:opacity-60"
+                className="button-danger rounded-lg px-4 py-2 disabled:opacity-60"
                 disabled={deletingIds.has(deleteTarget.id)}
                 onClick={() => void confirmDelete()}
                 type="button"
               >
+                <svg aria-hidden="true" className="status-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                  <path d="M4 7h16m-10 4v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" />
+                </svg>
                 {deletingIds.has(deleteTarget.id) ? "Deleting…" : "Delete document"}
               </button>
             </div>

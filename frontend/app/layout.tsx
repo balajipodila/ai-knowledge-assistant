@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { AuthProvider } from "@/components/auth-provider";
+import { ThemeColorMeta } from "@/components/theme-color-meta";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,6 +15,11 @@ export const metadata: Metadata = {
   title: "AI Knowledge Assistant",
   description:
     "Ask questions about your PDFs and explore answers grounded in retrieved passages.",
+  icons: { icon: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "transparent",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a className="skip-link" href="#main-content">
           Skip to main content
         </a>
+        <ThemeColorMeta />
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

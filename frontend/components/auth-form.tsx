@@ -13,6 +13,18 @@ type FieldErrors = { email?: string; password?: string };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function FormStatusIcon({ kind }: { kind: "error" | "info" }) {
+  return (
+    <svg aria-hidden="true" className="notice-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+      {kind === "error" ? (
+        <><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></>
+      ) : (
+        <><circle cx="12" cy="12" r="9" /><path d="M12 11v5m0-8h.01" /></>
+      )}
+    </svg>
+  );
+}
+
 function authFieldErrors(fields: Record<string, string>): FieldErrors {
   const errors: FieldErrors = {};
   if (fields.email) errors.email = fields.email;
@@ -96,7 +108,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <p className="eyebrow">
           {isSignup ? "Get started" : "Welcome back"}
         </p>
-        <h1>
+        <h1 className="metallic-heading">
           {isSignup ? "Create your account" : "Log in"}
         </h1>
         <p className="auth-description">
@@ -105,12 +117,14 @@ export function AuthForm({ mode }: { mode: Mode }) {
             : "Sign in to access your documents and cited chat."}
         </p>
         {expiredNotice && (
-          <p className="auth-notice" role="status">
+          <p className="notice notice-info auth-notice" role="status">
+            <FormStatusIcon kind="info" />
             Your session expired. Please log in again.
           </p>
         )}
         {formError && (
-          <p className="auth-error" role="alert">
+          <p className="notice notice-error auth-error" role="alert">
+            <FormStatusIcon kind="error" />
             {formError}
           </p>
         )}
@@ -132,6 +146,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             />
             {fieldErrors.email && (
               <p className="auth-field-error" id="email-error">
+                <FormStatusIcon kind="error" />
                 {fieldErrors.email}
               </p>
             )}
@@ -154,6 +169,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
             />
             {fieldErrors.password ? (
               <p className="auth-field-error" id="password-error">
+                <FormStatusIcon kind="error" />
                 {fieldErrors.password}
               </p>
             ) : (
