@@ -1,11 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { AuthProvider } from "../components/auth-provider";
 import Home from "./page";
 
 describe("home page", () => {
   it("explains the product, Gemini data use, and its grounded-answer design", () => {
-    const { container } = render(<Home />);
+    const { container } = render(
+      <AuthProvider>
+        <Home />
+      </AuthProvider>,
+    );
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "Find the useful pages in what you already know.",

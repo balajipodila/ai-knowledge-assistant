@@ -5,10 +5,11 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const routerMocks = vi.hoisted(() => ({
   push: vi.fn(),
-  replace: vi.fn(),
+  replace: vi.fn((path: string) => window.history.replaceState({}, "", path)),
 }));
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => window.location.pathname,
   useRouter: () => routerMocks,
 }));
 
@@ -29,5 +30,6 @@ if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
+  window.history.replaceState({}, "", "/");
   vi.restoreAllMocks();
 });

@@ -60,6 +60,33 @@ function listResponse(documents: object[]) {
 }
 
 describe("documents page", () => {
+  it("accepts a dropped PDF and exposes the drag state accessibly", async () => {
+    const uploaded = { ...existingDocument, status: "processing" };
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(listResponse([]))
+      .mockResolvedValueOnce(
+        jsonResponse(201, { ...uploaded, chunk_count: 2, duplicate: false }),
+      )
+      .mockResolvedValueOnce(listResponse([uploaded]));
+    renderDocuments();
+    await screen.findByText("No documents yet");
+
+    const dropzone = screen.getByText(/Drag a PDF here/).closest(".upload-dropzone");
+    expect(dropzone).not.toBeNull();
+    fireEvent.dragOver(dropzone as HTMLElement);
+    expect(dropzone?.getAttribute("data-drag-active")).toBe("true");
+    fireEvent.drop(dropzone as HTMLElement, {
+      dataTransfer: { files: [pdfFile()] },
+    });
+
+    expect(await screen.findByText("Selected: sample.pdf")).toBeTruthy();
+    expect(dropzone?.getAttribute("data-drag-active")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Upload PDF" }));
+    await screen.findByText("Upload complete. Current status: Processing.");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("rejects a non-PDF file and a file over the backend's 10 MiB default", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       listResponse([]),

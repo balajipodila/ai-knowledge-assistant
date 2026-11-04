@@ -148,6 +148,278 @@ input {
   background: var(--glass-header);
 }
 
+.workspace-shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+}
+
+.workspace-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  flex-direction: column;
+  gap: 2rem;
+  border-right: 1px solid var(--border-glass);
+  padding: 1.5rem 1rem;
+  background: var(--glass-header);
+  backdrop-filter: blur(var(--blur-panel));
+  -webkit-backdrop-filter: blur(var(--blur-panel));
+}
+
+.workspace-nav {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.workspace-nav a {
+  display: flex;
+  min-height: 2.85rem;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  padding: 0.7rem 0.85rem;
+  color: var(--text-muted);
+  font-weight: 650;
+  text-decoration: none;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.workspace-nav a:hover,
+.workspace-nav a[aria-current="page"] {
+  border-color: var(--border-glass);
+  color: var(--text-primary);
+  background: var(--glass-control);
+}
+
+.workspace-account {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: auto;
+}
+
+.workspace-account .account-email,
+.workspace-mobile-dialog .account-email {
+  margin: 0;
+}
+
+.workspace-logout {
+  width: 100%;
+}
+
+.workspace-content {
+  min-width: 0;
+}
+
+.workspace-mobile-bar,
+.workspace-mobile-dialog {
+  display: none;
+}
+
+.workspace-page {
+  width: min(100% - 3rem, 72rem);
+  margin: 0 auto;
+  padding: 2.5rem 0 4rem;
+}
+
+.workspace-page-header {
+  margin-bottom: 2rem;
+}
+
+.workspace-page-header .page-title {
+  margin: 0.5rem 0 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.workspace-page-header .page-description {
+  max-width: 42rem;
+  margin: 0.75rem 0 0;
+  line-height: 1.7;
+}
+
+.documents-page > section.glass-panel {
+  padding: 1.5rem;
+}
+
+.upload-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.upload-dropzone {
+  display: grid;
+  min-width: 0;
+  gap: 0.75rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  padding: 1.25rem;
+  background: var(--glass-control);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.upload-dropzone-active {
+  border-style: solid;
+  border-color: var(--focus-ring);
+  background: var(--maroon-800);
+  transform: translateY(-1px);
+}
+
+.upload-file-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.upload-dropzone .file-input {
+  width: 100%;
+  min-width: 0;
+  border-radius: var(--radius-control);
+  padding: 0.5rem;
+}
+
+.upload-dropzone .helper-text,
+.upload-selected-file {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.upload-selected-file {
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.upload-submit {
+  min-width: 9.5rem;
+}
+
+.documents-list-section {
+  margin-top: 2.5rem;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.dashboard-loading,
+.dashboard-error {
+  margin: 1rem 0;
+}
+
+.dashboard-error {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.85rem;
+  padding: clamp(1.5rem, 5vw, 3rem);
+}
+
+.dashboard-empty .page-description {
+  margin: 0;
+}
+
+.dashboard-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dashboard-metric {
+  min-width: 0;
+  padding: 1.25rem;
+}
+
+.dashboard-metric h2 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.dashboard-metric-value {
+  margin: 0.75rem 0 0;
+  color: var(--text-primary);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.dashboard-latest {
+  margin-top: 2.5rem;
+}
+
+.dashboard-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-section-heading .eyebrow {
+  margin: 0 0 0.35rem;
+}
+
+.dashboard-section-heading .section-subheading {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.dashboard-upload-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-upload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+}
+
+.dashboard-upload-copy {
+  min-width: 0;
+}
+
+.dashboard-upload-copy h3,
+.dashboard-upload-copy p {
+  margin: 0;
+}
+
+.dashboard-upload-copy .helper-text {
+  margin-top: 0.35rem;
+}
+
+.dashboard-failure-reason {
+  margin-top: 0.4rem !important;
+  color: var(--status-error);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 .site-header-inner {
   display: flex;
   width: min(100% - 2.5rem, 76rem);
@@ -406,9 +678,27 @@ input {
   .button-danger,
   .status-badge,
   .notice,
-  .glass-panel {
+  .glass-panel,
+  .workspace-sidebar,
+  .workspace-mobile-bar,
+  .workspace-mobile-dialog,
+  .upload-dropzone,
+  .dashboard-upload {
     border: 1px solid CanvasText;
     forced-color-adjust: auto;
+  }
+
+  .workspace-sidebar,
+  .workspace-mobile-bar,
+  .workspace-mobile-dialog {
+    color: CanvasText;
+    background: Canvas;
+  }
+
+  .workspace-nav a[aria-current="page"] {
+    color: HighlightText;
+    background: Highlight;
+    border-color: Highlight;
   }
 
   .button-primary,
@@ -819,6 +1109,97 @@ input {
 }
 
 @media (max-width: 48rem) {
+  .workspace-shell {
+    display: block;
+  }
+
+  .workspace-sidebar {
+    display: none;
+  }
+
+  .workspace-mobile-bar {
+    position: sticky;
+    z-index: 5;
+    top: 0;
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border-glass);
+    padding: 0.5rem 1rem;
+    background: var(--glass-header);
+    backdrop-filter: blur(var(--blur-panel));
+    -webkit-backdrop-filter: blur(var(--blur-panel));
+  }
+
+  .workspace-mobile-bar .brand-link {
+    font-size: 0.9rem;
+  }
+
+  .workspace-mobile-dialog {
+    position: fixed;
+    inset: 0 0 0 auto;
+    display: block;
+    width: min(22rem, 100%);
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border: 0;
+    border-left: 1px solid var(--border-glass);
+    padding: 1.25rem;
+    color: var(--text-primary);
+    background: var(--glass-fill);
+    box-shadow: var(--shadow-panel);
+  }
+
+  .workspace-mobile-dialog:not([open]) {
+    display: none;
+  }
+
+  .workspace-mobile-dialog::backdrop {
+    background: var(--shadow-deep);
+  }
+
+  .workspace-mobile-dialog-inner {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .workspace-menu-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .workspace-menu-heading .section-subheading {
+    margin: 0;
+  }
+
+  .workspace-page {
+    width: min(100% - 2rem, 72rem);
+    padding-top: 2rem;
+  }
+
+  .upload-form {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-submit {
+    width: 100%;
+  }
+
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-upload {
+    align-items: flex-start;
+  }
+
   .site-header-inner {
     width: min(100% - 2rem, 76rem);
     min-height: 4rem;
@@ -887,7 +1268,10 @@ input {
 @media (prefers-reduced-transparency: reduce) {
   .site-header,
   .glass-blur,
-  .mobile-nav[open] nav {
+  .mobile-nav[open] nav,
+  .workspace-sidebar,
+  .workspace-mobile-bar,
+  .workspace-mobile-dialog {
     background: var(--space-900);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -933,6 +1317,9 @@ input {
 
   .glass-blur,
   .site-header,
+  .workspace-sidebar,
+  .workspace-mobile-bar,
+  .workspace-mobile-dialog,
   .glass-panel,
   .document-choice,
   .citation-card,
@@ -1082,7 +1469,7 @@ input {
 }
 
 .delete-dialog::backdrop {
-  background: rgba(5, 2, 3, 0.82);
+  background: var(--shadow-deep);
 }
 
 .user-message {

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type DragEvent,
   type FormEvent,
 } from "react";
 
@@ -88,6 +89,7 @@ export function DocumentsManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [listError, setListError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [highlightedDocumentId, setHighlightedDocumentId] = useState<string | null>(
@@ -119,6 +121,15 @@ export function DocumentsManager() {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     setSelectedFile(event.target.files?.[0] ?? null);
+    setNotice(null);
+  }
+
+  function handleFileDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDragActive(false);
+    if (isUploading) return;
+    setSelectedFile(event.dataTransfer.files[0] ?? null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setNotice(null);
   }
 
@@ -254,8 +265,8 @@ export function DocumentsManager() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
-      <header>
+    <main className="workspace-page documents-page" id="main-content">
+      <header className="workspace-page-header">
         <p className="eyebrow">
           Your workspace
         </p>
@@ -275,10 +286,30 @@ export function DocumentsManager() {
         <h2 id="upload-heading" className="section-subheading text-lg font-semibold">
           Add a PDF
         </h2>
-        <form className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end" onSubmit={handleUpload}>
-          <div className="min-w-0 flex-1">
+        <form className="upload-form" onSubmit={handleUpload}>
+          <div
+            className={`upload-dropzone${isDragActive ? " upload-dropzone-active" : ""}`}
+            data-drag-active={isDragActive}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              if (!isUploading) setIsDragActive(true);
+            }}
+            onDragLeave={(event) => {
+              if (
+                event.relatedTarget instanceof Node &&
+                !event.currentTarget.contains(event.relatedTarget)
+              ) {
+                setIsDragActive(false);
+              }
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              if (!isUploading) setIsDragActive(true);
+            }}
+            onDrop={handleFileDrop}
+          >
             <label
-              className="field-label block text-sm font-medium"
+              className="field-label upload-file-label"
               htmlFor="document-file"
             >
               Choose a PDF
@@ -286,18 +317,24 @@ export function DocumentsManager() {
             <input
               ref={fileInputRef}
               accept="application/pdf,.pdf"
-              className="file-input mt-2 block w-full rounded-lg p-2 text-sm"
+              aria-describedby="upload-help"
+              className="file-input"
               disabled={isUploading}
               id="document-file"
               onChange={handleFileChange}
               type="file"
             />
-            <p className="helper-text mt-2 text-xs">
-              PDF only, up to 10 MiB.
+            <p className="helper-text" id="upload-help">
+              Drag a PDF here, or use the file picker. PDF only, up to 10 MiB.
             </p>
+            {selectedFile && (
+              <p aria-live="polite" className="upload-selected-file">
+                Selected: {selectedFile.name}
+              </p>
+            )}
           </div>
           <button
-            className="button-primary rounded-lg px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"
+            className="button-primary upload-submit"
             disabled={!selectedFile || isUploading}
             type="submit"
           >
@@ -312,7 +349,7 @@ export function DocumentsManager() {
         )}
       </section>
 
-      <section aria-labelledby="list-heading" className="mt-10">
+      <section aria-labelledby="list-heading" className="documents-list-section">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="list-heading" className="section-subheading text-xl font-semibold">
             Your files

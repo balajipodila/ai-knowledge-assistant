@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { AnimationScene, type AnimationSceneName } from "@/components/animation-scene";
+import { LandingActions } from "@/components/landing-actions";
 
 const steps: {
   scene: AnimationSceneName;
@@ -80,14 +80,7 @@ export default function Home() {
             Upload a PDF, ask a question in everyday language, and explore an
             answer with references to the passages it used.
           </p>
-          <div className="hero-actions">
-            <Link className="button-primary" href="/signup">
-              Create an account
-            </Link>
-            <Link className="button-secondary" href="/login">
-              Log in
-            </Link>
-          </div>
+          <LandingActions />
           <p className="hero-disclosure">
             Privacy note: text extracted from uploaded PDFs is sent to the
             Google Gemini API to create embeddings. When you ask a question,

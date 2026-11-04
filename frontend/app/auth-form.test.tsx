@@ -39,7 +39,7 @@ describe("authentication form", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("stores the signup token and goes straight to the workspace", async () => {
+  it("stores the signup token and redirects to the dashboard", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse(201, {
         access_token: "signup-test-token",
@@ -63,8 +63,36 @@ describe("authentication form", () => {
 
     await waitFor(() => {
       expect(window.sessionStorage.length).toBe(1);
+      expect(window.location.pathname).toBe("/dashboard");
     });
     expect(window.sessionStorage.getItem("ai-knowledge-assistant.session"))
       .toContain("signup-test-token");
+  });
+
+  it("redirects a successful login to the dashboard", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(200, {
+        access_token: "login-test-token",
+        token_type: "bearer",
+        expires_in: 1800,
+        user: {
+          id: "user-2",
+          email: "person@example.test",
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      }),
+    );
+    renderForm("login");
+    fireEvent.change(screen.getByLabelText("Email address"), {
+      target: { value: "person@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "correct horse battery" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe("/dashboard");
+    });
   });
 });

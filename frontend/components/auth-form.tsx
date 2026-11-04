@@ -89,7 +89,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         },
       );
       signIn(response);
-      router.replace("/documents");
+      router.replace("/dashboard");
     } catch (error) {
       if (error instanceof ApiError) {
         setFieldErrors(authFieldErrors(error.fields));
