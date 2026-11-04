@@ -1,5 +1,7 @@
 # AI Knowledge Assistant
 
+[![CI](https://github.com/balajipodila/ai-knowledge-assistant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/balajipodila/ai-knowledge-assistant/actions/workflows/ci.yml)
+
 A local-first RAG web app for uploading PDFs, searching personal documents, and asking questions with page-level citations.
 
 ## Milestones
