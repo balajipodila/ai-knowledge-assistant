@@ -187,7 +187,7 @@ These are variable names only; the table contains no keys or configured values.
 | Database | `DATABASE_URL`, `TEST_DATABASE_URL` |
 | Frontend and CORS | `NEXT_PUBLIC_API_URL`, `CORS_ORIGINS` |
 | Authentication | `JWT_SECRET_KEY`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` |
-| Public demo | `SIGNUP_ENABLED`, `DEMO_MODE`, `DEMO_USER_EMAIL`, `DEMO_MAX_DOCUMENTS_PER_USER`, `DEMO_MAX_PDF_PAGES`, `DEMO_MAX_USERS`, `DEMO_MAX_DOCUMENTS`, `DEMO_SESSION_REQUESTS_PER_MINUTE`, `DEMO_CHAT_REQUESTS_PER_MINUTE`, `DEMO_CHAT_REQUESTS_PER_DAY`, `DEMO_SEARCH_REQUESTS_PER_MINUTE`, `DEMO_SEARCH_REQUESTS_PER_DAY` |
+| Public demo | `SIGNUP_ENABLED`, `DEMO_MODE`, `DEMO_USER_EMAIL`, `DEMO_DOCUMENT_ID`, `DEMO_SESSION_EXPIRE_MINUTES`, `DEMO_MAX_DOCUMENTS_PER_USER`, `DEMO_MAX_PDF_PAGES`, `DEMO_MAX_USERS`, `DEMO_MAX_DOCUMENTS`, `DEMO_SESSION_REQUESTS_PER_MINUTE`, `DEMO_SESSION_REQUESTS_PER_DAY`, `DEMO_CHAT_REQUESTS_PER_MINUTE`, `DEMO_CHAT_REQUESTS_PER_DAY`, `DEMO_SEARCH_REQUESTS_PER_MINUTE`, `DEMO_SEARCH_REQUESTS_PER_DAY`, `DEMO_CHAT_GLOBAL_REQUESTS_PER_DAY`, `DEMO_SEARCH_GLOBAL_REQUESTS_PER_DAY` |
 | AI availability | `AI_FEATURES_ENABLED` |
 | Gemini | `GEMINI_API_KEY`, `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMENSION`, `GEMINI_CHAT_MODEL`, `GEMINI_CHAT_FALLBACK_MODEL` |
 | Embedding requests | `EMBEDDING_BATCH_SIZE`, `EMBEDDING_MAX_ATTEMPTS`, `EMBEDDING_BACKOFF_BASE_SECONDS`, `EMBEDDING_BACKOFF_MAX_SECONDS`, `EMBEDDING_BATCH_DELAY_SECONDS` |
@@ -215,10 +215,32 @@ within separate demo limits, but upload, delete, and embedding retry are
 rejected by the API as well as hidden in the interface. The seeding script is
 not run when a visitor starts a session.
 
+Demo issuance does not use client IP: it uses the generous global
+`DEMO_SESSION_REQUESTS_PER_MINUTE` and `DEMO_SESSION_REQUESTS_PER_DAY` caps,
+so an empty `TRUSTED_PROXY_CIDRS` does not put visitors into a tight shared
+issuance bucket. Each issued token has its own opaque session identity for the
+per-session chat/search limits; the configurable global daily chat/search caps
+remain shared across all demo sessions.
+
+The repository includes [demo_sample.pdf](backend/scripts/demo_sample.pdf), a
+one-page PDF authored for this project. It contains only the sentence “AI
+Knowledge Assistant public demo sample.” and has no personal or third-party
+content. The seeding script writes to the database selected by
+`DATABASE_URL`—never `TEST_DATABASE_URL`—and sends the extracted sample text
+to the configured Gemini embedding model once during the manual seed. It is
+idempotent for the configured demo user and filename: an existing document is
+left unchanged. After seeding, set `DEMO_DOCUMENT_ID` to the reported document
+ID so demo chat and search are explicitly restricted to that document.
+
 `SIGNUP_ENABLED=false` disables new account creation. Set
 `AI_FEATURES_ENABLED=false` to return a friendly `503` for chat, search, and
 PDF ingestion without changing authentication or document listing. This is a
 Gemini-cost kill switch, not a general read-only mode.
+
+For the production demo launch, use `SIGNUP_ENABLED=false` and
+`FILE_STORAGE_BACKEND=none`. Enable signups only for a deliberate authenticated
+rollout, and keep the demo user and its seeded document outside the signup
+flow.
 
 ### Measuring real Neon storage
 

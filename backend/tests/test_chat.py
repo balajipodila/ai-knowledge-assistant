@@ -94,6 +94,7 @@ def chat_client(
         return search_rows
 
     monkeypatch.setattr("app.services.chat.SearchService.search", search)
+    monkeypatch.setattr("app.services.search.SearchService.search", search)
 
     def override_db() -> Generator[Session, None, None]:
         with factory() as session:
@@ -161,13 +162,23 @@ def _authorized_post(
     settings: Settings,
     user_id: UUID,
     body: dict[str, object],
+    *,
+    is_demo: bool = False,
 ) -> httpx.Response:
     http_client = cast(ChatHttpClient, client)
     return http_client.post(
         "/chat",
         json=body,
         headers={
-            "Authorization": f"Bearer {create_access_token(user_id, settings)}"
+            "Authorization": (
+                "Bearer "
+                + create_access_token(
+                    user_id,
+                    settings,
+                    is_demo=is_demo,
+                    rate_limit_identity="demo:test-session" if is_demo else None,
+                )
+            )
         },
     )
 
@@ -218,6 +229,54 @@ def test_search_can_scope_document_and_override_threshold_for_measurement(
     assert search_calls[-1]["top_k"] == 5
     assert search_calls[-1]["min_similarity"] == -1.0
     assert settings.search_min_similarity == 0.0
+
+
+def test_demo_chat_is_scoped_to_the_seeded_document(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+) -> None:
+    client, settings, _, _, search_calls = chat_client
+    settings.demo_mode = True
+    user, document, _ = _create_result(client)
+    settings.demo_user_email = user.email
+    settings.demo_document_id = str(document.id)
+
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "What is in the sample?"},
+        is_demo=True,
+    )
+
+    assert response.status_code == 200
+    assert search_calls[-1]["document_ids"] == [document.id]
+
+
+def test_demo_search_is_scoped_to_the_seeded_document(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+) -> None:
+    client, settings, _, _, search_calls = chat_client
+    settings.demo_mode = True
+    user, document, _ = _create_result(client)
+    settings.demo_user_email = user.email
+    settings.demo_document_id = str(document.id)
+
+    response = cast(ChatHttpClient, client).post(
+        "/search",
+        json={"query": "What is in the sample?", "top_k": 5},
+        headers={
+            "Authorization": "Bearer "
+            + create_access_token(
+                user.id,
+                settings,
+                is_demo=True,
+                rate_limit_identity="demo:test-search-session",
+            )
+        },
+    )
+
+    assert response.status_code == 200
+    assert search_calls[-1]["document_ids"] == [document.id]
 
 
 def test_chat_keeps_only_retrieved_citations_and_drops_invented_numbers(

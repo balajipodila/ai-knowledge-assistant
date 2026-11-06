@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
 from uuid import UUID
 
 import jwt
@@ -33,14 +34,25 @@ def validate_jwt_settings(settings: Settings) -> None:
     _secret(settings)
 
 
+@dataclass(frozen=True)
+class AccessTokenClaims:
+    subject: UUID
+    rate_limit_identity: str | None
+    is_demo: bool
+
+
 def create_access_token(
     subject: UUID,
     settings: Settings,
     *,
     rate_limit_identity: str | None = None,
+    is_demo: bool = False,
+    expires_minutes: int | None = None,
 ) -> str:
     now = datetime.now(timezone.utc)
-    expires_at = now + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    expires_at = now + timedelta(
+        minutes=expires_minutes or settings.jwt_access_token_expire_minutes
+    )
     payload = {
         "sub": str(subject),
         "iat": now,
@@ -48,20 +60,16 @@ def create_access_token(
     }
     if rate_limit_identity is not None:
         payload["rate_limit_identity"] = rate_limit_identity
+    if is_demo:
+        payload["is_demo"] = True
     return jwt.encode(payload, _secret(settings), algorithm=JWT_ALGORITHM)
 
 
 def decode_access_token(token: str, settings: Settings) -> UUID:
-    payload = jwt.decode(
-        token,
-        _secret(settings),
-        algorithms=[JWT_ALGORITHM],
-        options={"require": ["exp", "iat", "sub"]},
-    )
-    return UUID(payload["sub"])
+    return decode_access_token_claims(token, settings).subject
 
 
-def decode_rate_limit_identity(token: str, settings: Settings) -> str | None:
+def decode_access_token_claims(token: str, settings: Settings) -> AccessTokenClaims:
     payload = jwt.decode(
         token,
         _secret(settings),
@@ -69,4 +77,12 @@ def decode_rate_limit_identity(token: str, settings: Settings) -> str | None:
         options={"require": ["exp", "iat", "sub"]},
     )
     identity = payload.get("rate_limit_identity")
-    return identity if isinstance(identity, str) and identity else None
+    return AccessTokenClaims(
+        subject=UUID(payload["sub"]),
+        rate_limit_identity=identity if isinstance(identity, str) and identity else None,
+        is_demo=payload.get("is_demo") is True,
+    )
+
+
+def decode_rate_limit_identity(token: str, settings: Settings) -> str | None:
+    return decode_access_token_claims(token, settings).rate_limit_identity

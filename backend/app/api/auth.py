@@ -129,6 +129,8 @@ def demo_session(
         user,
         settings,
         rate_limit_identity=f"demo:{token_urlsafe(18)}",
+        is_demo=True,
+        expires_minutes=settings.demo_session_expire_minutes,
     )
 
 
@@ -145,10 +147,16 @@ def _auth_response(
     settings: Settings,
     *,
     rate_limit_identity: str | None = None,
+    is_demo: bool = False,
+    expires_minutes: int | None = None,
 ) -> AuthResponse:
     return AuthResponse(
         access_token=create_access_token(
-            user.id, settings, rate_limit_identity=rate_limit_identity
+            user.id,
+            settings,
+            rate_limit_identity=rate_limit_identity,
+            is_demo=is_demo,
+            expires_minutes=expires_minutes,
         ),
         expires_in=settings.jwt_access_token_expire_minutes * 60,
         user=_user_response(user, settings),

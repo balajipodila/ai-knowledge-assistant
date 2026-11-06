@@ -1,4 +1,8 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.models.document import Document
@@ -34,7 +38,11 @@ def max_documents_per_user(settings: Settings) -> int:
 
 
 def max_pdf_pages(settings: Settings) -> int:
-    return min(settings.max_pdf_pages, settings.demo_max_pdf_pages) if settings.demo_mode else settings.max_pdf_pages
+    return (
+        min(settings.max_pdf_pages, settings.demo_max_pdf_pages)
+        if settings.demo_mode
+        else settings.max_pdf_pages
+    )
 
 
 def global_demo_caps_reached(user_count: int, document_count: int, settings: Settings) -> str | None:
@@ -45,3 +53,27 @@ def global_demo_caps_reached(user_count: int, document_count: int, settings: Set
     if document_count >= settings.demo_max_documents:
         return "The public demo has reached its document limit. Please try again later."
     return None
+
+
+def demo_document_id(
+    session: Session,
+    user: User,
+    settings: Settings,
+) -> UUID | None:
+    if settings.demo_document_id:
+        try:
+            configured_id = UUID(settings.demo_document_id)
+        except ValueError:
+            return None
+        return session.scalar(
+            select(Document.id).where(
+                Document.id == configured_id,
+                Document.user_id == user.id,
+            )
+        )
+    return session.scalar(
+        select(Document.id)
+        .where(Document.user_id == user.id)
+        .order_by(Document.created_at, Document.id)
+        .limit(1)
+    )

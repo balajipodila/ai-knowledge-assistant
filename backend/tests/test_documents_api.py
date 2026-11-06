@@ -243,6 +243,52 @@ def test_demo_user_cannot_upload_or_delete_documents(
     assert delete.json()["error"]["code"] == "FORBIDDEN"
 
 
+def test_demo_user_cannot_read_another_users_documents(
+    document_client: dict[str, Any],
+) -> None:
+    settings = document_client["settings"]
+    settings.demo_mode = True
+    with document_client["factory"]() as session:
+        demo_user = User(
+            email=settings.demo_user_email,
+            password_hash="not-a-login-password",
+        )
+        other_user = User(email="other@example.com", password_hash="test-hash")
+        session.add_all([demo_user, other_user])
+        session.commit()
+        own_document = Document(
+            user_id=demo_user.id,
+            filename="seed.pdf",
+            content_hash="b" * 64,
+            page_count=1,
+            status="ready",
+        )
+        other_document = Document(
+            user_id=other_user.id,
+            filename="private.pdf",
+            content_hash="c" * 64,
+            page_count=1,
+            status="ready",
+        )
+        session.add_all([own_document, other_document])
+        session.commit()
+        token = create_access_token(
+            demo_user.id,
+            settings,
+            is_demo=True,
+            rate_limit_identity="demo:test-session",
+        )
+
+    headers = {"Authorization": f"Bearer {token}"}
+    listed = document_client["client"].get("/documents", headers=headers)
+    hidden = document_client["client"].get(
+        f"/documents/{other_document.id}", headers=headers
+    )
+
+    assert [item["id"] for item in listed.json()] == [str(own_document.id)]
+    assert hidden.status_code == 404
+
+
 def test_ai_feature_switch_blocks_upload_before_ingestion(
     document_client: dict[str, Any],
 ) -> None:

@@ -8,10 +8,12 @@ from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.rate_limits import (
     RateLimitExceeded,
+    DemoLimitExceeded,
     RequestRateLimiter,
     _Rule,
     chat_rate_limit,
     enforce_auth_attempt,
+    enforce_demo_session_attempt,
     enforce_resource_rate_limit,
     search_rate_limit,
     trusted_client_ip,
@@ -186,6 +188,47 @@ def test_demo_sessions_use_separate_rate_limit_identities() -> None:
 
     enforce_resource_rate_limit(first, user, settings, "chat")
     enforce_resource_rate_limit(second, user, settings, "chat")
+
+
+def test_demo_global_daily_cap_is_shared_but_session_cap_is_separate() -> None:
+    settings = Settings(
+        _env_file=None,
+        DEMO_CHAT_REQUESTS_PER_MINUTE=10,
+        DEMO_CHAT_REQUESTS_PER_DAY=10,
+        DEMO_CHAT_GLOBAL_REQUESTS_PER_DAY=1,
+    )
+    application = FastAPI()
+    application.state.request_rate_limiter = RequestRateLimiter()
+    first = _request_with_client_and_forwarded_for("198.51.100.10", "")
+    second = _request_with_client_and_forwarded_for("198.51.100.10", "")
+    first.scope["app"] = application
+    second.scope["app"] = application
+    first.state.rate_limit_identity = "demo:visitor-one"
+    second.state.rate_limit_identity = "demo:visitor-two"
+    first.state.is_demo_session = True
+    second.state.is_demo_session = True
+    user = User(id=uuid4(), email="demo@example.com", password_hash="test-hash")
+
+    enforce_resource_rate_limit(first, user, settings, "chat")
+    with pytest.raises(DemoLimitExceeded, match="The demo limit has been reached"):
+        enforce_resource_rate_limit(second, user, settings, "chat")
+
+
+def test_demo_session_issuance_uses_a_global_generous_cap() -> None:
+    settings = Settings(
+        _env_file=None,
+        DEMO_SESSION_REQUESTS_PER_MINUTE=2,
+        DEMO_SESSION_REQUESTS_PER_DAY=10,
+    )
+    application = FastAPI()
+    application.state.request_rate_limiter = RequestRateLimiter()
+    first = _request_with_client_and_forwarded_for("198.51.100.10", "203.0.113.1")
+    second = _request_with_client_and_forwarded_for("198.51.100.10", "203.0.113.2")
+    first.scope["app"] = application
+    second.scope["app"] = application
+
+    enforce_demo_session_attempt(first, settings)
+    enforce_demo_session_attempt(second, settings)
 
 
 def test_rate_limit_has_retry_after_and_does_not_echo_identity() -> None:

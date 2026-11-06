@@ -24,7 +24,13 @@ from app.services.storage import create_file_storage
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pdf", type=Path, help="Path to the non-personal sample PDF")
+    parser.add_argument(
+        "pdf",
+        type=Path,
+        nargs="?",
+        default=Path(__file__).with_name("demo_sample.pdf"),
+        help="Path to the non-personal sample PDF (defaults to demo_sample.pdf)",
+    )
     parser.add_argument("--filename", default="demo-sample.pdf")
     return parser.parse_args()
 

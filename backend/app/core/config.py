@@ -33,15 +33,20 @@ class Settings(BaseSettings):
     ai_features_enabled: bool = True
     demo_mode: bool = False
     demo_user_email: str = "demo@example.com"
+    demo_document_id: str | None = None
+    demo_session_expire_minutes: int = Field(default=15, gt=0, le=60)
     demo_max_documents_per_user: int = Field(default=3, ge=1, le=100000)
     demo_max_pdf_pages: int = Field(default=50, ge=1, le=200)
     demo_max_users: int = Field(default=100, ge=1, le=100000000)
     demo_max_documents: int = Field(default=300, ge=1, le=100000000)
-    demo_session_requests_per_minute: int = Field(default=30, ge=1, le=100000)
+    demo_session_requests_per_minute: int = Field(default=120, ge=1, le=100000)
+    demo_session_requests_per_day: int = Field(default=2000, ge=1, le=10000000)
     demo_chat_requests_per_minute: int = Field(default=5, ge=1, le=10000)
     demo_chat_requests_per_day: int = Field(default=100, ge=1, le=1000000)
     demo_search_requests_per_minute: int = Field(default=20, ge=1, le=10000)
     demo_search_requests_per_day: int = Field(default=500, ge=1, le=1000000)
+    demo_chat_global_requests_per_day: int = Field(default=1000, ge=1, le=10000000)
+    demo_search_global_requests_per_day: int = Field(default=5000, ge=1, le=10000000)
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)

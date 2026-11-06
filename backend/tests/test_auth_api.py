@@ -117,6 +117,39 @@ def test_demo_session_is_passwordless_and_uses_a_read_only_user(client: TestClie
     assert response.status_code == 200
     assert response.json()["user"]["is_demo"] is True
     assert response.json()["access_token"]
+    claims = jwt.decode(
+        response.json()["access_token"],
+        TEST_SECRET,
+        algorithms=[JWT_ALGORITHM],
+    )
+    assert claims["is_demo"] is True
+    assert claims["exp"] - claims["iat"] == 15 * 60
+
+
+def test_tampered_demo_claim_is_rejected(client: TestClient) -> None:
+    settings = client.app.dependency_overrides[get_settings]()
+    settings.demo_mode = True
+    with client.app.state.test_session_factory() as session:
+        user = User(email=settings.demo_user_email, password_hash="not-a-login-password")
+        session.add(user)
+        session.commit()
+        token = jwt.encode(
+            {
+                "sub": str(user.id),
+                "iat": datetime.now(timezone.utc),
+                "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
+                "is_demo": True,
+                "rate_limit_identity": "demo:tampered",
+            },
+            "not-the-test-secret",
+            algorithm=JWT_ALGORITHM,
+        )
+
+    response = client.get(
+        "/auth/me", headers={"Authorization": f"Bearer {token}"}
+    )
+
+    assert response.status_code == 401
 
 
 def test_login_success_returns_access_token(client: TestClient) -> None:

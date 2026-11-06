@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.core.tokens import decode_access_token, decode_rate_limit_identity, validate_jwt_settings
+from app.core.demo import is_demo_user
+from app.core.tokens import decode_access_token_claims, validate_jwt_settings
 from app.models.user import User
 
 _bearer_scheme = HTTPBearer(auto_error=False)
@@ -32,7 +33,7 @@ def get_current_user(
 
     validate_jwt_settings(settings)
     try:
-        user_id = decode_access_token(credentials.credentials, settings)
+        claims = decode_access_token_claims(credentials.credentials, settings)
     except (InvalidTokenError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -40,14 +41,19 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
-    user = session.scalar(select(User).where(User.id == user_id))
+    user = session.scalar(select(User).where(User.id == claims.subject))
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication is required.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    request.state.rate_limit_identity = (
-        decode_rate_limit_identity(credentials.credentials, settings) or str(user.id)
-    )
+    if claims.is_demo and not is_demo_user(user, settings):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication is required.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    request.state.is_demo_session = claims.is_demo and is_demo_user(user, settings)
+    request.state.rate_limit_identity = claims.rate_limit_identity or str(user.id)
     return user

@@ -16,7 +16,7 @@ describe("home page", () => {
       "Find the useful pages in what you already know.",
     );
     expect(
-      screen.getByText(/text extracted from uploaded PDFs is sent to the Google Gemini API/i),
+      screen.getByText(/text from your documents is sent to the Google Gemini API/i),
     ).toBeTruthy();
     expect(screen.getByRole("heading", { name: "How it works" })).toBeTruthy();
     for (const step of [

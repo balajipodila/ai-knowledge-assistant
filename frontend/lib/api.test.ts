@@ -111,4 +111,15 @@ describe("typed API client", () => {
       message: "Could not connect to the service. Check your connection and try again.",
     });
   });
+
+  it("explains when the shared demo budget is exhausted", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      response(429, { error: { code: "DEMO_LIMIT_REACHED" } }),
+    );
+
+    await expect(apiRequest("/chat")).rejects.toMatchObject({
+      status: 429,
+      message: "The demo limit has been reached. Please try again tomorrow.",
+    });
+  });
 });

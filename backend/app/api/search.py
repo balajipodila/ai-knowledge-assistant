@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.ai.dependencies import get_embedding_client
@@ -9,6 +9,7 @@ from app.ai.interfaces import EmbeddingClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.demo import demo_document_id
 from app.core.features import require_ai_features_enabled
 from app.core.rate_limits import search_rate_limit
 from app.models.user import User
@@ -21,7 +22,8 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 @router.post("", response_model=SearchResponse)
 def search_documents(
-    request: SearchRequest,
+    request: Request,
+    payload: SearchRequest,
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -29,7 +31,22 @@ def search_documents(
     _rate_limit: Annotated[None, Depends(search_rate_limit)],
 ) -> SearchResponse:
     require_ai_features_enabled(settings)
-    if request.top_k > settings.search_max_top_k:
+    if getattr(request.state, "is_demo_session", False):
+        allowed_document_id = demo_document_id(session, user, settings)
+        payload = payload.model_copy(
+            update={
+                "document_ids": (
+                    [allowed_document_id]
+                    if allowed_document_id is not None
+                    and (
+                        payload.document_ids is None
+                        or allowed_document_id in payload.document_ids
+                    )
+                    else []
+                )
+            }
+        )
+    if payload.top_k > settings.search_max_top_k:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="top_k exceeds the configured maximum.",
@@ -39,7 +56,7 @@ def search_documents(
         query_embedding = EmbeddingService(
             client=embedding_client,
             settings=settings,
-        ).embed_query(request.query)
+        ).embed_query(payload.query)
     except EmbeddingProviderError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -51,13 +68,13 @@ def search_documents(
         user_id=user.id,
         query_embedding=query_embedding,
         embedding_model=settings.gemini_embedding_model,
-        top_k=request.top_k,
+        top_k=payload.top_k,
         min_similarity=(
-            request.min_similarity
-            if request.min_similarity is not None
+            payload.min_similarity
+            if payload.min_similarity is not None
             else settings.search_min_similarity
         ),
-        document_ids=request.document_ids,
+        document_ids=payload.document_ids,
     )
     return SearchResponse(
         results=[

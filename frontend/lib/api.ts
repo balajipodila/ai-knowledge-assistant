@@ -85,6 +85,9 @@ function friendlyError(
     PDF_NO_TEXT: "No selectable text was found in the PDF. Scanned PDFs are not supported yet.",
   };
   if (documentUploadErrors[code]) return documentUploadErrors[code];
+  if (code === "DEMO_LIMIT_REACHED") {
+    return "The demo limit has been reached. Please try again tomorrow.";
+  }
   if (status === 401) return "Email or password is incorrect.";
   if (status === 409) return "An account with this email already exists.";
   if (status === 422) return "Check the highlighted fields and try again.";

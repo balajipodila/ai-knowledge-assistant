@@ -19,10 +19,26 @@ _DAY_SECONDS = 24 * 60 * 60
 
 
 class RateLimitExceeded(Exception):
-    def __init__(self, retry_after_seconds: int) -> None:
+    def __init__(
+        self,
+        retry_after_seconds: int,
+        *,
+        code: str = "TOO_MANY_REQUESTS",
+        message: str = "Too many requests. Please try again later.",
+    ) -> None:
+        super().__init__(message)
         self.retry_after_seconds = max(1, retry_after_seconds)
-        self.code = "TOO_MANY_REQUESTS"
-        self.message = "Too many requests. Please try again later."
+        self.code = code
+        self.message = message
+
+
+class DemoLimitExceeded(RateLimitExceeded):
+    def __init__(self) -> None:
+        super().__init__(
+            _DAY_SECONDS,
+            code="DEMO_LIMIT_REACHED",
+            message="The demo limit has been reached. Please try again tomorrow.",
+        )
 
 
 @dataclass(frozen=True)
@@ -175,8 +191,9 @@ def enforce_resource_rate_limit(
         ),
     }
     per_minute, per_day = limits[resource]
+    is_demo_session = getattr(request.state, "is_demo_session", False)
     identity = getattr(request.state, "rate_limit_identity", str(user.id))
-    if identity != str(user.id):
+    if is_demo_session:
         if resource == "chat":
             per_minute, per_day = (
                 settings.demo_chat_requests_per_minute,
@@ -187,12 +204,25 @@ def enforce_resource_rate_limit(
                 settings.demo_search_requests_per_minute,
                 settings.demo_search_requests_per_day,
             )
-    get_request_limiter(request).consume(
+    limiter = get_request_limiter(request)
+    limiter.consume(
         [
             _Rule(resource, identity, per_minute, _MINUTE_SECONDS),
             _Rule(resource, identity, per_day, _DAY_SECONDS),
         ]
     )
+    if is_demo_session and resource in {"chat", "search"}:
+        global_limit = (
+            settings.demo_chat_global_requests_per_day
+            if resource == "chat"
+            else settings.demo_search_global_requests_per_day
+        )
+        try:
+            limiter.consume(
+                [_Rule(f"demo-global:{resource}", "all-demo-sessions", global_limit, _DAY_SECONDS)]
+            )
+        except RateLimitExceeded:
+            raise DemoLimitExceeded from None
 
 
 def enforce_auth_attempt(
@@ -226,15 +256,20 @@ def enforce_demo_session_attempt(
     request: Request,
     settings: Settings,
 ) -> None:
-    client_ip = trusted_client_ip(request, settings)
     get_request_limiter(request).consume(
         [
             _Rule(
-                "auth:demo-session:ip",
-                client_ip,
+                "auth:demo-session:global",
+                "all-visitors",
                 settings.demo_session_requests_per_minute,
                 _MINUTE_SECONDS,
-            )
+            ),
+            _Rule(
+                "auth:demo-session:global",
+                "all-visitors",
+                settings.demo_session_requests_per_day,
+                _DAY_SECONDS,
+            ),
         ]
     )
 
