@@ -446,3 +446,84 @@ def test_upload_requires_authentication(document_client: dict[str, Any]) -> None
 
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "UNAUTHORIZED"
+
+
+def test_delete_succeeds_even_if_storage_delete_fails(
+    document_client: dict[str, Any],
+) -> None:
+    upload = _upload(document_client, _pdf_bytes(["Delete with failing storage"]))
+    document_id = UUID(upload.json()["id"])
+
+    class DeleteFailingStorage(FileStorage):
+        def save(self, data: bytes) -> str:
+            return "dummy.pdf"
+        def delete(self, storage_key: str) -> None:
+            raise RuntimeError("Storage down")
+
+    import app.api.documents as documents_api
+    monkeypatch_storage = pytest.MonkeyPatch()
+    monkeypatch_storage.setattr(documents_api, "create_file_storage", lambda s: DeleteFailingStorage())
+    try:
+        response = document_client["client"].delete(
+            f"/documents/{document_id}",
+            headers={**document_client["headers"], "X-Request-ID": "test-req-id-123"},
+        )
+        assert response.status_code == 204
+        with document_client["factory"]() as session:
+            assert session.get(Document, document_id) is None
+    finally:
+        monkeypatch_storage.undo()
+
+
+def test_delete_is_idempotent_when_object_already_missing(
+    document_client: dict[str, Any],
+) -> None:
+    upload = _upload(document_client, _pdf_bytes(["Delete missing object"]))
+    document_id = UUID(upload.json()["id"])
+
+    class MissingObjectStorage(FileStorage):
+        def save(self, data: bytes) -> str:
+            return "dummy.pdf"
+        def delete(self, storage_key: str) -> None:
+            raise FileNotFoundError("Object not found")
+
+    import app.api.documents as documents_api
+    monkeypatch_storage = pytest.MonkeyPatch()
+    monkeypatch_storage.setattr(documents_api, "create_file_storage", lambda s: MissingObjectStorage())
+    try:
+        response = document_client["client"].delete(
+            f"/documents/{document_id}",
+            headers=document_client["headers"],
+        )
+        assert response.status_code == 204
+        with document_client["factory"]() as session:
+            assert session.get(Document, document_id) is None
+    finally:
+        monkeypatch_storage.undo()
+
+
+def test_upload_fails_cleanly_when_storage_save_fails(
+    document_client: dict[str, Any],
+) -> None:
+    class SaveFailingStorage(FileStorage):
+        def save(self, data: bytes) -> str:
+            raise RuntimeError("Storage save failed")
+        def delete(self, storage_key: str) -> None:
+            pass
+
+    import app.api.documents as documents_api
+    monkeypatch_storage = pytest.MonkeyPatch()
+    monkeypatch_storage.setattr(documents_api, "create_file_storage", lambda s: SaveFailingStorage())
+    try:
+        pdf_content = _pdf_bytes(["Upload with save failure"])
+        with pytest.raises(RuntimeError, match="Storage save failed"):
+            document_client["client"].post(
+                "/documents",
+                headers=document_client["headers"],
+                files={"file": ("sample.pdf", BytesIO(pdf_content), "application/pdf")},
+            )
+        with document_client["factory"]() as session:
+            assert session.scalars(select(Document)).all() == []
+    finally:
+        monkeypatch_storage.undo()
+

@@ -1,16 +1,19 @@
 from typing import Annotated
 from uuid import UUID
 
+from botocore.exceptions import ClientError
 from fastapi import (
     APIRouter,
     Depends,
     File,
     HTTPException,
+    Request,
     Response,
     UploadFile,
     status,
 )
 from sqlalchemy.orm import Session
+import structlog
 
 from app.ai.dependencies import get_embedding_client
 from app.ai.interfaces import EmbeddingClient
@@ -18,6 +21,7 @@ from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
 from app.core.rate_limits import upload_rate_limit
+from app.core.request_id import get_request_id
 from app.models.user import User
 from app.schemas.documents import DocumentResponse, DocumentUploadResponse
 from app.services.documents import DocumentService
@@ -26,6 +30,7 @@ from app.services.ingestion import DocumentIngestionService, DocumentUploadError
 from app.services.storage import create_file_storage
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+logger = structlog.get_logger(__name__)
 
 
 @router.post(
@@ -135,6 +140,7 @@ def delete_document(
     user: Annotated[User, Depends(get_current_user)],
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
+    request: Request,
 ) -> None:
     service = DocumentService()
     document = service.get_document(
@@ -142,8 +148,27 @@ def delete_document(
     )
     if document is None:
         raise HTTPException(status_code=404, detail="Document not found.")
-    if document.storage_key is not None:
-        create_file_storage(settings).delete(document.storage_key)
+
+    storage_key = document.storage_key
     service.delete_document(
         session, user_id=user.id, document_id=document_id
     )
+
+    if storage_key is not None:
+        try:
+            create_file_storage(settings).delete(storage_key)
+        except Exception as error:
+            is_not_found = False
+            if isinstance(error, ClientError):
+                err_code = error.response.get("Error", {}).get("Code", "")
+                if err_code in {"404", "NoSuchKey", "NotFound"}:
+                    is_not_found = True
+            elif isinstance(error, FileNotFoundError):
+                is_not_found = True
+
+            if not is_not_found:
+                request_id = get_request_id(request)
+                logger.warning(
+                    "Storage deletion failed after document record deletion",
+                    request_id=request_id,
+                )

@@ -4,6 +4,7 @@ from typing import Protocol
 from uuid import uuid4
 
 import boto3
+from botocore.client import Config
 
 from app.core.config import Settings
 
@@ -65,6 +66,9 @@ class S3FileStorage(FileStorage):
         region: str,
         access_key_id: str,
         secret_access_key: str,
+        connect_timeout: float = 5.0,
+        read_timeout: float = 30.0,
+        max_attempts: int = 3,
         client: S3Client | None = None,
     ) -> None:
         self.bucket = bucket
@@ -74,9 +78,16 @@ class S3FileStorage(FileStorage):
             else boto3.client(
                 "s3",
                 endpoint_url=endpoint_url,
-                region_name=region,
+                region_name=region or "auto",
                 aws_access_key_id=access_key_id,
                 aws_secret_access_key=secret_access_key,
+                config=Config(
+                    s3={"addressing_style": "path"},
+                    signature_version="s3v4",
+                    connect_timeout=connect_timeout,
+                    read_timeout=read_timeout,
+                    retries={"max_attempts": max_attempts, "mode": "standard"},
+                ),
             )
         )
 
@@ -114,4 +125,7 @@ def create_file_storage(settings: Settings) -> FileStorage:
         region=settings.s3_region,
         access_key_id=settings.s3_access_key_id.get_secret_value(),
         secret_access_key=settings.s3_secret_access_key.get_secret_value(),
+        connect_timeout=settings.s3_connect_timeout_seconds,
+        read_timeout=settings.s3_read_timeout_seconds,
+        max_attempts=settings.s3_max_attempts,
     )
