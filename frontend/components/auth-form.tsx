@@ -59,13 +59,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [expiredNotice, setExpiredNotice] = useState(false);
+  const [expiredReason, setExpiredReason] = useState<"demo" | "regular" | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(
       () =>
-        setExpiredNotice(
-          new URLSearchParams(window.location.search).get("reason") === "expired",
+        setExpiredReason(
+          new URLSearchParams(window.location.search).get("reason") === "demo-expired"
+            ? "demo"
+            : new URLSearchParams(window.location.search).get("reason") === "expired"
+              ? "regular"
+              : null,
         ),
       0,
     );
@@ -121,10 +125,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
             We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
           </p>
         )}
-        {expiredNotice && (
+        {expiredReason && (
           <p className="notice notice-info auth-notice" role="status">
             <FormStatusIcon kind="info" />
-            Your session expired. Please log in again.
+            {expiredReason === "demo"
+              ? "Demo session ended. Start a new demo from the home page."
+              : "Your session expired. Please log in again."}
           </p>
         )}
         {formError && (

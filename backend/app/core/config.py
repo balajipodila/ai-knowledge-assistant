@@ -42,11 +42,11 @@ class Settings(BaseSettings):
     demo_session_requests_per_minute: int = Field(default=120, ge=1, le=100000)
     demo_session_requests_per_day: int = Field(default=2000, ge=1, le=10000000)
     demo_chat_requests_per_minute: int = Field(default=5, ge=1, le=10000)
-    demo_chat_requests_per_day: int = Field(default=100, ge=1, le=1000000)
-    demo_search_requests_per_minute: int = Field(default=20, ge=1, le=10000)
-    demo_search_requests_per_day: int = Field(default=500, ge=1, le=1000000)
-    demo_chat_global_requests_per_day: int = Field(default=1000, ge=1, le=10000000)
-    demo_search_global_requests_per_day: int = Field(default=5000, ge=1, le=10000000)
+    demo_chat_requests_per_day: int = Field(default=50, ge=1, le=1000000)
+    demo_search_requests_per_minute: int = Field(default=10, ge=1, le=10000)
+    demo_search_requests_per_day: int = Field(default=100, ge=1, le=1000000)
+    demo_chat_global_requests_per_day: int = Field(default=200, ge=1, le=10000000)
+    demo_search_global_requests_per_day: int = Field(default=500, ge=1, le=10000000)
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)

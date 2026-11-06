@@ -34,11 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const expireSession = useCallback(() => {
+    const wasDemoSession = readSession()?.user.is_demo === true;
     clearSession();
     setUser(null);
     setStatus("unauthenticated");
     setSessionExpired(true);
-    router.replace("/login?reason=expired");
+    router.replace(wasDemoSession ? "/login?reason=demo-expired" : "/login?reason=expired");
   }, [router]);
 
   useEffect(() => {

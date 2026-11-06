@@ -311,6 +311,10 @@ you inspect whether the cache row is reused.
 
 ## Limitations and risks
 
+For production configuration, provider setup, manual migration/seed steps,
+measurement procedures, launch checks, and rollback guidance, see the
+[production runbook](docs/production-runbook.md).
+
 - **One-process rate limits:** limits reset on restart and do not coordinate
   across multiple workers or replicas. A shared store is needed before scaling
   out.

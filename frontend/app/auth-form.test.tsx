@@ -95,4 +95,13 @@ describe("authentication form", () => {
       expect(window.location.pathname).toBe("/dashboard");
     });
   });
+
+  it("explains that an expired demo needs a new demo session", async () => {
+    window.history.pushState({}, "", "/login?reason=demo-expired");
+    renderForm("login");
+
+    expect(
+      await screen.findByText("Demo session ended. Start a new demo from the home page."),
+    ).toBeTruthy();
+  });
 });
