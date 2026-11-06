@@ -12,6 +12,7 @@ from app.core.rate_limits import (
     _Rule,
     chat_rate_limit,
     enforce_auth_attempt,
+    enforce_resource_rate_limit,
     search_rate_limit,
     trusted_client_ip,
     upload_rate_limit,
@@ -165,6 +166,26 @@ def test_chat_concurrency_cap_is_released_after_a_request() -> None:
     limiter.release_concurrent("chat", "user-1")
 
     assert limiter.try_acquire_concurrent("chat", "user-1", 1)
+
+
+def test_demo_sessions_use_separate_rate_limit_identities() -> None:
+    settings = Settings(
+        _env_file=None,
+        DEMO_CHAT_REQUESTS_PER_MINUTE=1,
+        DEMO_CHAT_REQUESTS_PER_DAY=10,
+    )
+    application = FastAPI()
+    application.state.request_rate_limiter = RequestRateLimiter()
+    first = _request_with_client_and_forwarded_for("198.51.100.10", "")
+    second = _request_with_client_and_forwarded_for("198.51.100.10", "")
+    first.scope["app"] = application
+    second.scope["app"] = application
+    first.state.rate_limit_identity = "demo:visitor-one"
+    second.state.rate_limit_identity = "demo:visitor-two"
+    user = User(id=uuid4(), email="demo@example.com", password_hash="test-hash")
+
+    enforce_resource_rate_limit(first, user, settings, "chat")
+    enforce_resource_rate_limit(second, user, settings, "chat")
 
 
 def test_rate_limit_has_retry_after_and_does_not_echo_identity() -> None:

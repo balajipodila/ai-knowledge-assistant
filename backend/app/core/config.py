@@ -29,6 +29,19 @@ class Settings(BaseSettings):
     )
     trusted_proxy_cidrs: list[str] = Field(default_factory=list)
     app_environment: str = Field(default="development", validation_alias="APP_ENV")
+    signup_enabled: bool = True
+    ai_features_enabled: bool = True
+    demo_mode: bool = False
+    demo_user_email: str = "demo@example.com"
+    demo_max_documents_per_user: int = Field(default=3, ge=1, le=100000)
+    demo_max_pdf_pages: int = Field(default=50, ge=1, le=200)
+    demo_max_users: int = Field(default=100, ge=1, le=100000000)
+    demo_max_documents: int = Field(default=300, ge=1, le=100000000)
+    demo_session_requests_per_minute: int = Field(default=30, ge=1, le=100000)
+    demo_chat_requests_per_minute: int = Field(default=5, ge=1, le=10000)
+    demo_chat_requests_per_day: int = Field(default=100, ge=1, le=1000000)
+    demo_search_requests_per_minute: int = Field(default=20, ge=1, le=10000)
+    demo_search_requests_per_day: int = Field(default=500, ge=1, le=1000000)
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)
@@ -160,6 +173,11 @@ class Settings(BaseSettings):
                 "CHAT_BACKOFF_MAX_SECONDS must be at least "
                 "CHAT_BACKOFF_BASE_SECONDS."
             )
+        return self
+
+    @model_validator(mode="after")
+    def demo_email_is_normalized(self) -> "Settings":
+        self.demo_user_email = self.demo_user_email.strip().lower()
         return self
 
 

@@ -12,6 +12,7 @@ import {
 
 import { ApiError, apiRequest } from "@/lib/api";
 import type { DocumentItem, DocumentUploadResponse } from "@/lib/types";
+import { useAuth } from "./auth-provider";
 import { ColdStartStatus } from "./cold-start-status";
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // Mirrors the backend default in app/core/config.py.
@@ -86,6 +87,8 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function DocumentsManager() {
+  const { user } = useAuth();
+  const isDemoUser = user?.is_demo === true;
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [listError, setListError] = useState("");
@@ -283,7 +286,7 @@ export function DocumentsManager() {
         </p>
       </header>
 
-      <section
+      {!isDemoUser && <section
         aria-labelledby="upload-heading"
         className="glass-panel mt-8 p-5 sm:p-7"
       >
@@ -351,7 +354,12 @@ export function DocumentsManager() {
             Processing your PDF. This can take a minute; please keep this page open.
           </p>
         )}
-      </section>
+      </section>}
+      {isDemoUser && (
+        <p className="notice notice-info mt-8 text-sm" role="status">
+          You are viewing the read-only demo. Uploading and deleting documents are disabled.
+        </p>
+      )}
 
       <section aria-labelledby="list-heading" className="documents-list-section">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -444,7 +452,7 @@ export function DocumentsManager() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2 sm:justify-end">
-                      {document.status === "embedding_failed" && (
+                      {!isDemoUser && document.status === "embedding_failed" && (
                         <button
                           aria-label={`Retry embedding for ${document.filename}`}
                           className="button-secondary rounded-lg px-3 py-2 text-sm disabled:opacity-60"
@@ -455,7 +463,7 @@ export function DocumentsManager() {
                           {isRetrying ? "Retrying…" : "Retry embedding"}
                         </button>
                       )}
-                      <button
+                      {!isDemoUser && <button
                         aria-label={`Delete ${document.filename}`}
                         className="button-danger rounded-lg px-3 py-2 text-sm disabled:opacity-60"
                         disabled={isDeleting || isRetrying}
@@ -466,7 +474,7 @@ export function DocumentsManager() {
                           <path d="M4 7h16m-10 4v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" />
                         </svg>
                         {isDeleting ? "Deleting…" : "Delete"}
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </li>

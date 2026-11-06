@@ -2,6 +2,7 @@ export type User = {
   id: string;
   email: string;
   created_at: string;
+  is_demo?: boolean;
 };
 
 export type AuthResponse = {

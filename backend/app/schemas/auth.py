@@ -71,6 +71,7 @@ class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
     created_at: datetime
+    is_demo: bool = False
 
 
 class AuthResponse(BaseModel):

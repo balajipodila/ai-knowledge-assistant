@@ -175,10 +175,22 @@ def enforce_resource_rate_limit(
         ),
     }
     per_minute, per_day = limits[resource]
+    identity = getattr(request.state, "rate_limit_identity", str(user.id))
+    if identity != str(user.id):
+        if resource == "chat":
+            per_minute, per_day = (
+                settings.demo_chat_requests_per_minute,
+                settings.demo_chat_requests_per_day,
+            )
+        elif resource == "search":
+            per_minute, per_day = (
+                settings.demo_search_requests_per_minute,
+                settings.demo_search_requests_per_day,
+            )
     get_request_limiter(request).consume(
         [
-            _Rule(resource, str(user.id), per_minute, _MINUTE_SECONDS),
-            _Rule(resource, str(user.id), per_day, _DAY_SECONDS),
+            _Rule(resource, identity, per_minute, _MINUTE_SECONDS),
+            _Rule(resource, identity, per_day, _DAY_SECONDS),
         ]
     )
 
@@ -210,6 +222,23 @@ def enforce_auth_attempt(
     )
 
 
+def enforce_demo_session_attempt(
+    request: Request,
+    settings: Settings,
+) -> None:
+    client_ip = trusted_client_ip(request, settings)
+    get_request_limiter(request).consume(
+        [
+            _Rule(
+                "auth:demo-session:ip",
+                client_ip,
+                settings.demo_session_requests_per_minute,
+                _MINUTE_SECONDS,
+            )
+        ]
+    )
+
+
 def chat_rate_limit(
     request: Request,
     user: User = Depends(get_current_user),
@@ -217,7 +246,7 @@ def chat_rate_limit(
 ) -> Iterator[None]:
     limiter = get_request_limiter(request)
     enforce_resource_rate_limit(request, user, settings, "chat")
-    user_key = str(user.id)
+    user_key = getattr(request.state, "rate_limit_identity", str(user.id))
     if not limiter.try_acquire_concurrent(
         "chat-concurrent", user_key, settings.chat_concurrent_requests_per_user
     ):

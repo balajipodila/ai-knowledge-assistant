@@ -187,6 +187,8 @@ These are variable names only; the table contains no keys or configured values.
 | Database | `DATABASE_URL`, `TEST_DATABASE_URL` |
 | Frontend and CORS | `NEXT_PUBLIC_API_URL`, `CORS_ORIGINS` |
 | Authentication | `JWT_SECRET_KEY`, `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` |
+| Public demo | `SIGNUP_ENABLED`, `DEMO_MODE`, `DEMO_USER_EMAIL`, `DEMO_MAX_DOCUMENTS_PER_USER`, `DEMO_MAX_PDF_PAGES`, `DEMO_MAX_USERS`, `DEMO_MAX_DOCUMENTS`, `DEMO_SESSION_REQUESTS_PER_MINUTE`, `DEMO_CHAT_REQUESTS_PER_MINUTE`, `DEMO_CHAT_REQUESTS_PER_DAY`, `DEMO_SEARCH_REQUESTS_PER_MINUTE`, `DEMO_SEARCH_REQUESTS_PER_DAY` |
+| AI availability | `AI_FEATURES_ENABLED` |
 | Gemini | `GEMINI_API_KEY`, `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMENSION`, `GEMINI_CHAT_MODEL`, `GEMINI_CHAT_FALLBACK_MODEL` |
 | Embedding requests | `EMBEDDING_BATCH_SIZE`, `EMBEDDING_MAX_ATTEMPTS`, `EMBEDDING_BACKOFF_BASE_SECONDS`, `EMBEDDING_BACKOFF_MAX_SECONDS`, `EMBEDDING_BATCH_DELAY_SECONDS` |
 | Search | `SEARCH_MAX_TOP_K`, `SEARCH_MIN_SIMILARITY` |
@@ -202,6 +204,21 @@ is deliberate: keep that IP-only cap generous enough for normal traffic and
 use the per-email limit plus authenticated per-user resource limits as the
 primary controls. Configure the proxy CIDRs only when they are known and
 trusted. Keep CORS origins explicit; wildcard origins are rejected.
+
+### Public demo protection
+
+Set `DEMO_MODE=true` only after manually running
+`backend/scripts/seed_demo.py` with a non-personal sample PDF. The landing
+page's **Try demo** action creates a passwordless session for the configured
+read-only demo user. Visitors can view the seeded document and use chat/search
+within separate demo limits, but upload, delete, and embedding retry are
+rejected by the API as well as hidden in the interface. The seeding script is
+not run when a visitor starts a session.
+
+`SIGNUP_ENABLED=false` disables new account creation. Set
+`AI_FEATURES_ENABLED=false` to return a friendly `503` for chat, search, and
+PDF ingestion without changing authentication or document listing. This is a
+Gemini-cost kill switch, not a general read-only mode.
 
 ### Measuring real Neon storage
 

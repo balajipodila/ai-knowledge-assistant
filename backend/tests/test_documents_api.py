@@ -204,6 +204,56 @@ def test_document_cap_allows_duplicate_but_rejects_a_new_document(
     assert over_limit.json()["error"]["code"] == "DOCUMENT_LIMIT_REACHED"
 
 
+def test_demo_user_cannot_upload_or_delete_documents(
+    document_client: dict[str, Any],
+) -> None:
+    settings = document_client["settings"]
+    settings.demo_mode = True
+    with document_client["factory"]() as session:
+        demo_user = User(
+            email=settings.demo_user_email,
+            password_hash="not-a-login-password",
+        )
+        session.add(demo_user)
+        session.commit()
+        demo_document = Document(
+            user_id=demo_user.id,
+            filename="seed.pdf",
+            content_hash="a" * 64,
+            page_count=1,
+            status="ready",
+        )
+        session.add(demo_document)
+        session.commit()
+        token = create_access_token(demo_user.id, settings)
+
+    headers = {"Authorization": f"Bearer {token}"}
+    upload = document_client["client"].post(
+        "/documents",
+        files={"file": ("new.pdf", b"%PDF-1.7", "application/pdf")},
+        headers=headers,
+    )
+    delete = document_client["client"].delete(
+        f"/documents/{demo_document.id}",
+        headers=headers,
+    )
+
+    assert upload.status_code == 403
+    assert delete.status_code == 403
+    assert delete.json()["error"]["code"] == "FORBIDDEN"
+
+
+def test_ai_feature_switch_blocks_upload_before_ingestion(
+    document_client: dict[str, Any],
+) -> None:
+    document_client["settings"].ai_features_enabled = False
+
+    response = _upload(document_client, b"%PDF-1.7")
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+
+
 @pytest.mark.parametrize(
     ("filename", "content_type", "content", "expected_code"),
     [
@@ -284,6 +334,17 @@ def test_page_limit_is_enforced(document_client: dict[str, Any]) -> None:
         )
     assert document is not None
     assert document.page_count == 3
+
+
+def test_demo_page_limit_is_lower_and_configurable(
+    document_client: dict[str, Any],
+) -> None:
+    document_client["settings"].demo_mode = True
+    document_client["settings"].demo_max_pdf_pages = 1
+    response = _upload(document_client, _pdf_bytes(["one", "two"]))
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "PDF_TOO_MANY_PAGES"
 
 
 def test_duplicate_upload_returns_existing_document(

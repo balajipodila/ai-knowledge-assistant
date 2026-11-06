@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
 from sqlalchemy import select
@@ -9,13 +9,14 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
-from app.core.tokens import decode_access_token, validate_jwt_settings
+from app.core.tokens import decode_access_token, decode_rate_limit_identity, validate_jwt_settings
 from app.models.user import User
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
+    request: Request,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)
     ],
@@ -46,4 +47,7 @@ def get_current_user(
             detail="Authentication is required.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    request.state.rate_limit_identity = (
+        decode_rate_limit_identity(credentials.credentials, settings) or str(user.id)
+    )
     return user

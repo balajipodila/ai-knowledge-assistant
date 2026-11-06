@@ -20,6 +20,8 @@ from app.ai.interfaces import EmbeddingClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.demo import ensure_writable_user
+from app.core.features import require_ai_features_enabled
 from app.core.rate_limits import upload_rate_limit
 from app.core.request_id import get_request_id
 from app.models.user import User
@@ -48,6 +50,8 @@ async def upload_document(
     response: Response,
     _rate_limit: Annotated[None, Depends(upload_rate_limit)],
 ) -> DocumentUploadResponse:
+    require_ai_features_enabled(settings)
+    ensure_writable_user(user, settings)
     data = await file.read(settings.max_upload_size_bytes + 1)
     if len(data) > settings.max_upload_size_bytes:
         raise DocumentUploadError(
@@ -86,6 +90,8 @@ def retry_document_embedding(
     settings: Annotated[Settings, Depends(get_settings)],
     embedding_client: Annotated[EmbeddingClient, Depends(get_embedding_client)],
 ) -> DocumentResponse:
+    require_ai_features_enabled(settings)
+    ensure_writable_user(user, settings)
     document_service = DocumentService()
     document = document_service.get_document(
         session, user_id=user.id, document_id=document_id
@@ -142,6 +148,7 @@ def delete_document(
     settings: Annotated[Settings, Depends(get_settings)],
     request: Request,
 ) -> None:
+    ensure_writable_user(user, settings)
     service = DocumentService()
     document = service.get_document(
         session, user_id=user.id, document_id=document_id

@@ -664,3 +664,22 @@ def test_chat_request_requires_authentication(
         json={"question": "What do my documents say?"},
     )
     assert response.status_code == 401
+
+
+def test_ai_feature_switch_blocks_chat_before_provider_calls(
+    chat_client: tuple[TestClient, Settings, FakeLLMClient, list, list],
+) -> None:
+    client, settings, llm_client, _, _ = chat_client
+    settings.ai_features_enabled = False
+    user, _, _ = _create_result(client)
+
+    response = _authorized_post(
+        client,
+        settings,
+        user.id,
+        {"question": "What do my documents say?"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert llm_client.prompts == []

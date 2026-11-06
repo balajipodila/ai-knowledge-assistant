@@ -33,7 +33,12 @@ def validate_jwt_settings(settings: Settings) -> None:
     _secret(settings)
 
 
-def create_access_token(subject: UUID, settings: Settings) -> str:
+def create_access_token(
+    subject: UUID,
+    settings: Settings,
+    *,
+    rate_limit_identity: str | None = None,
+) -> str:
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=settings.jwt_access_token_expire_minutes)
     payload = {
@@ -41,6 +46,8 @@ def create_access_token(subject: UUID, settings: Settings) -> str:
         "iat": now,
         "exp": expires_at,
     }
+    if rate_limit_identity is not None:
+        payload["rate_limit_identity"] = rate_limit_identity
     return jwt.encode(payload, _secret(settings), algorithm=JWT_ALGORITHM)
 
 
@@ -52,3 +59,14 @@ def decode_access_token(token: str, settings: Settings) -> UUID:
         options={"require": ["exp", "iat", "sub"]},
     )
     return UUID(payload["sub"])
+
+
+def decode_rate_limit_identity(token: str, settings: Settings) -> str | None:
+    payload = jwt.decode(
+        token,
+        _secret(settings),
+        algorithms=[JWT_ALGORITHM],
+        options={"require": ["exp", "iat", "sub"]},
+    )
+    identity = payload.get("rate_limit_identity")
+    return identity if isinstance(identity, str) and identity else None

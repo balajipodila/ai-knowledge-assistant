@@ -93,6 +93,32 @@ def test_duplicate_signup_returns_conflict(client: TestClient) -> None:
     assert response.json()["error"]["code"] == "CONFLICT"
 
 
+def test_signup_can_be_disabled_without_creating_an_account(client: TestClient) -> None:
+    settings = client.app.dependency_overrides[get_settings]()
+    settings.signup_enabled = False
+
+    response = client.post("/auth/signup", json=SIGNUP_BODY)
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+
+
+def test_demo_session_is_passwordless_and_uses_a_read_only_user(client: TestClient) -> None:
+    settings = client.app.dependency_overrides[get_settings]()
+    settings.demo_mode = True
+    with client.app.state.test_session_factory() as session:
+        session.add(
+            User(email=settings.demo_user_email, password_hash="not-a-login-password")
+        )
+        session.commit()
+
+    response = client.post("/auth/demo")
+
+    assert response.status_code == 200
+    assert response.json()["user"]["is_demo"] is True
+    assert response.json()["access_token"]
+
+
 def test_login_success_returns_access_token(client: TestClient) -> None:
     _signup(client)
 

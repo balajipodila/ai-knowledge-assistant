@@ -8,6 +8,7 @@ from app.ai.interfaces import EmbeddingClient, LLMClient
 from app.core.auth import get_current_user
 from app.core.config import Settings, get_settings
 from app.core.database import get_db
+from app.core.features import require_ai_features_enabled
 from app.core.rate_limits import chat_rate_limit
 from app.core.request_id import get_request_id
 from app.models.user import User
@@ -28,6 +29,7 @@ def chat(
     llm_client: Annotated[LLMClient, Depends(get_llm_client)],
     _rate_limit: Annotated[None, Depends(chat_rate_limit)],
 ) -> ChatResponse:
+    require_ai_features_enabled(settings)
     return ChatService(
         embedding_client=embedding_client,
         llm_client=llm_client,

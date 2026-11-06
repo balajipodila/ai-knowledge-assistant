@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
+from app.core.demo import max_documents_per_user, max_pdf_pages
 from app.models.chunk import Chunk
 from app.models.document import Document
 from app.models.user import User
@@ -111,7 +112,14 @@ class DocumentIngestionService:
         document_count = session.scalar(
             select(func.count(Document.id)).where(Document.user_id == user.id)
         )
-        if (document_count or 0) >= self.settings.max_documents_per_user:
+        total_document_count = session.scalar(select(func.count(Document.id)))
+        if self.settings.demo_mode and (total_document_count or 0) >= self.settings.demo_max_documents:
+            raise DocumentUploadError(
+                409,
+                "DEMO_DOCUMENT_LIMIT_REACHED",
+                "The public demo has reached its document limit. Please try again later.",
+            )
+        if (document_count or 0) >= max_documents_per_user(self.settings):
             raise DocumentUploadError(
                 409,
                 "DOCUMENT_LIMIT_REACHED",
@@ -149,7 +157,9 @@ class DocumentIngestionService:
             raise
 
         try:
-            pages = self.extractor.extract(data, max_pages=self.settings.max_pdf_pages)
+            pages = self.extractor.extract(
+                data, max_pages=max_pdf_pages(self.settings)
+            )
         except PDFExtractionError as error:
             document.status = "failed"
             document.failure_reason = error.message
