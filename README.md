@@ -41,7 +41,7 @@ workers or replicas and is cleared when the process restarts.
 ## Technology
 
 - Backend: Python 3.12, FastAPI, Pydantic Settings, SQLAlchemy, Alembic.
-- Data: PostgreSQL, pgvector, and optional file storage (`FILE_STORAGE_BACKEND=none`, `local`, or `s3`). We do not keep your original PDF file.
+- Data: PostgreSQL, pgvector, and optional file storage (`FILE_STORAGE_BACKEND=none`, `local`, or `s3`). With `none`, the original PDF is discarded after extraction; only extracted passages and numeric embeddings remain in PostgreSQL.
 - AI: Google Gemini embeddings and text generation, accessed through replaceable
   client interfaces. Automated tests use fake clients.
 - Frontend: Next.js App Router, React, TypeScript, and Tailwind CSS.
@@ -50,6 +50,11 @@ workers or replicas and is cleared when the process restarts.
 - CI and containers: GitHub Actions and digest-pinned Docker base images.
 
 > **Privacy Note**: We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
+
+The none backend requires no schema migration: migration `0003_document_ingestion`
+added `documents.storage_key` as nullable, and the none backend stores `NULL`
+there. This avoids a sentinel value and keeps the column semantically accurate;
+the trade-off is that a document row does not identify a discarded original file.
 
 ## Run locally on Windows (without Docker)
 
@@ -190,8 +195,80 @@ These are variable names only; the table contains no keys or configured values.
 | Upload and chunking | `UPLOAD_DIRECTORY`, `MAX_UPLOAD_SIZE_BYTES`, `MAX_PDF_PAGES`, `CHUNK_SIZE`, `CHUNK_OVERLAP` |
 
 The rate-limit settings are process-local. Forwarded client IP headers are
-ignored unless the direct peer is in `TRUSTED_PROXY_CIDRS`. Keep CORS origins
-explicit; wildcard origins are rejected.
+ignored unless the direct peer is in `TRUSTED_PROXY_CIDRS`. When
+`TRUSTED_PROXY_CIDRS` is empty, the direct peer address is used, so a reverse
+proxy can make the IP-only login/signup limit one shared global bucket. This
+is deliberate: keep that IP-only cap generous enough for normal traffic and
+use the per-email limit plus authenticated per-user resource limits as the
+primary controls. Configure the proxy CIDRs only when they are known and
+trusted. Keep CORS origins explicit; wildcard origins are rejected.
+
+### Measuring real Neon storage
+
+After uploading a representative sample PDF, run the following SQL in Neon,
+replacing the UUID with the uploaded document's ID. It reports the actual
+relation and index sizes, including `embedding_cache`, plus the sample's row
+counts and logical payload sizes. Do not use an estimate based only on the
+PDF's original file size: extracted text, vectors, cache rows, and indexes are
+stored separately.
+
+```sql
+-- 1. Actual allocated size of the relevant tables and all their indexes.
+SELECT
+  c.relname AS relation,
+  pg_size_pretty(pg_table_size(c.oid)) AS table_bytes,
+  pg_size_pretty(pg_indexes_size(c.oid)) AS index_bytes,
+  pg_size_pretty(pg_total_relation_size(c.oid)) AS total_bytes,
+  pg_total_relation_size(c.oid) AS total_bytes_exact
+FROM pg_class AS c
+JOIN pg_namespace AS n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public'
+  AND c.relname IN ('documents', 'chunks', 'embedding_cache')
+ORDER BY total_bytes_exact DESC;
+
+-- 2. Logical payload and cache rows for the uploaded sample document.
+WITH target AS (
+  SELECT id, user_id, content_hash
+  FROM documents
+  WHERE id = '00000000-0000-0000-0000-000000000000'::uuid
+),
+chunk_stats AS (
+  SELECT
+    count(*) AS chunk_count,
+    coalesce(sum(pg_column_size(c)), 0) AS chunk_payload_bytes,
+    coalesce(sum(pg_column_size(c.embedding)), 0) AS embedding_payload_bytes
+  FROM chunks AS c
+  JOIN target AS t ON t.id = c.document_id AND t.user_id = c.user_id
+),
+cache_stats AS (
+  SELECT
+    count(*) AS cache_row_count,
+    coalesce(sum(pg_column_size(ec)), 0) AS cache_payload_bytes,
+    coalesce(sum(pg_column_size(ec.embedding)), 0) AS cache_embedding_bytes
+  FROM embedding_cache AS ec
+  JOIN target AS t ON t.user_id = ec.user_id
+  WHERE ec.content_hash = t.content_hash
+)
+SELECT
+  t.id AS document_id,
+  pg_column_size(d) AS document_row_bytes,
+  cs.chunk_count,
+  cs.chunk_payload_bytes,
+  cs.embedding_payload_bytes,
+  es.cache_row_count,
+  es.cache_payload_bytes,
+  es.cache_embedding_bytes
+FROM target AS t
+JOIN documents AS d ON d.id = t.id
+CROSS JOIN chunk_stats AS cs
+CROSS JOIN cache_stats AS es;
+```
+
+For a rough per-document allocation, divide each relation's `total_bytes_exact`
+by its row count and multiply by the sample's row counts, then add the sample's
+logical payload figures. `embedding_cache` can be shared by multiple documents
+with the same content hash, so its allocated bytes are an upper bound unless
+you inspect whether the cache row is reused.
 
 ## Limitations and risks
 

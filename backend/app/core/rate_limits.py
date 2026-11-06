@@ -116,6 +116,13 @@ class RequestRateLimiter:
 
 
 def trusted_client_ip(request: Request, settings: Settings) -> str:
+    """Return a client IP only when the direct peer is a trusted proxy.
+
+    An empty TRUSTED_PROXY_CIDRS intentionally trusts no proxy. Behind a
+    reverse proxy, this means every request can share the proxy's peer IP.
+    Callers must therefore treat the IP bucket as a coarse global safeguard,
+    not as a per-visitor identity.
+    """
     peer = request.client.host if request.client is not None else "unknown"
     if not settings.trusted_proxy_cidrs:
         return peer
@@ -188,8 +195,8 @@ def enforce_auth_attempt(
     get_request_limiter(request).consume(
         [
             _Rule(
-                f"auth:{action}:ip-email",
-                f"{client_ip}|{normalized_email}",
+                f"auth:{action}:email",
+                normalized_email,
                 settings.auth_email_attempts_per_minute,
                 _MINUTE_SECONDS,
             ),

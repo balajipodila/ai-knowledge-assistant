@@ -59,6 +59,38 @@ def test_forwarded_ip_is_ignored_unless_peer_is_a_trusted_proxy() -> None:
     assert trusted_client_ip(trusted_request, trusted_settings) == "203.0.113.5"
 
 
+def test_empty_trusted_proxy_cidrs_uses_peer_as_shared_ip_bucket() -> None:
+    settings = Settings(_env_file=None)
+    first = _request_with_client_and_forwarded_for("198.51.100.10", "203.0.113.5")
+    second = _request_with_client_and_forwarded_for("198.51.100.10", "203.0.113.6")
+
+    assert trusted_client_ip(first, settings) == "198.51.100.10"
+    assert trusted_client_ip(second, settings) == "198.51.100.10"
+
+
+@pytest.mark.parametrize("action", ["login", "signup"])
+def test_auth_email_limit_is_independent_of_shared_ip_bucket(action: str) -> None:
+    settings = Settings(
+        _env_file=None,
+        AUTH_EMAIL_ATTEMPTS_PER_MINUTE=1,
+        AUTH_IP_ATTEMPTS_PER_MINUTE=10,
+    )
+    application = FastAPI()
+    application.state.request_rate_limiter = RequestRateLimiter()
+    first = _request_with_client_and_forwarded_for("198.51.100.10", "203.0.113.5")
+    second = _request_with_client_and_forwarded_for("198.51.100.11", "203.0.113.6")
+    first.scope["app"] = application
+    second.scope["app"] = application
+
+    enforce_auth_attempt(
+        first, email="person@example.test", action=action, settings=settings
+    )
+    with pytest.raises(RateLimitExceeded):
+        enforce_auth_attempt(
+            second, email="PERSON@example.test", action=action, settings=settings
+        )
+
+
 def test_forwarded_ip_with_invalid_address_falls_back_to_peer() -> None:
     request = _request_with_client_and_forwarded_for(
         "192.0.2.12", "not-an-ip"
