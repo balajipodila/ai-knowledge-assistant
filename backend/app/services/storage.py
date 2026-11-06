@@ -87,6 +87,8 @@ class S3FileStorage(FileStorage):
                     connect_timeout=connect_timeout,
                     read_timeout=read_timeout,
                     retries={"max_attempts": max_attempts, "mode": "standard"},
+                    request_checksum_calculation="when_supported",
+                    response_checksum_validation="when_required",
                 ),
             )
         )
