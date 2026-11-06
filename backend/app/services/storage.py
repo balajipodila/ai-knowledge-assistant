@@ -69,6 +69,8 @@ class S3FileStorage(FileStorage):
         connect_timeout: float = 5.0,
         read_timeout: float = 30.0,
         max_attempts: int = 3,
+        request_checksum_calculation: str = "when_supported",
+        response_checksum_validation: str = "when_required",
         client: S3Client | None = None,
     ) -> None:
         self.bucket = bucket
@@ -87,8 +89,8 @@ class S3FileStorage(FileStorage):
                     connect_timeout=connect_timeout,
                     read_timeout=read_timeout,
                     retries={"max_attempts": max_attempts, "mode": "standard"},
-                    request_checksum_calculation="when_supported",
-                    response_checksum_validation="when_required",
+                    request_checksum_calculation=request_checksum_calculation,
+                    response_checksum_validation=response_checksum_validation,
                 ),
             )
         )
@@ -130,4 +132,6 @@ def create_file_storage(settings: Settings) -> FileStorage:
         connect_timeout=settings.s3_connect_timeout_seconds,
         read_timeout=settings.s3_read_timeout_seconds,
         max_attempts=settings.s3_max_attempts,
+        request_checksum_calculation=settings.s3_request_checksum_calculation,
+        response_checksum_validation=settings.s3_response_checksum_validation,
     )

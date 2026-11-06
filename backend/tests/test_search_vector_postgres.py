@@ -57,18 +57,22 @@ def _same_database(first: str, second: str) -> bool:
 
 @pytest.fixture(scope="module")
 def postgres_factory() -> Generator[sessionmaker[Session], None, None]:
-    test_url = os.environ.get("TEST_DATABASE_URL")
-    if not test_url:
+    settings = get_settings()
+    test_url_secret = settings.test_database_url
+    if not test_url_secret or not test_url_secret.get_secret_value().strip():
         pytest.skip(
             "Vector search integration tests skipped: TEST_DATABASE_URL is not set."
         )
+    test_url = test_url_secret.get_secret_value()
 
-    main_url = os.environ.get("DATABASE_URL")
-    if main_url is not None and _same_database(test_url, main_url):
-        pytest.fail(
-            "TEST_DATABASE_URL resolves to DATABASE_URL; refusing to run vector tests.",
-            pytrace=False,
-        )
+    main_url_secret = settings.database_url
+    if main_url_secret and main_url_secret.get_secret_value().strip():
+        main_url = main_url_secret.get_secret_value()
+        if _same_database(test_url, main_url):
+            pytest.fail(
+                "TEST_DATABASE_URL resolves to DATABASE_URL; refusing to run vector tests.",
+                pytrace=False,
+            )
 
     engine = create_engine(test_url, pool_pre_ping=True)
     try:
