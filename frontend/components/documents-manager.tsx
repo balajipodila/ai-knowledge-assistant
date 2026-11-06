@@ -277,6 +277,9 @@ export function DocumentsManager() {
           Upload PDFs to search and ask questions about them. Uploading includes
           text extraction and embedding, so larger files may take a little while.
         </p>
+        <p className="helper-text mt-2 max-w-2xl text-xs">
+          We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
+        </p>
       </header>
 
       <section

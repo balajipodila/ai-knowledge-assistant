@@ -11,12 +11,20 @@ from app.core.config import Settings
 
 class FileStorage(ABC):
     @abstractmethod
-    def save(self, data: bytes) -> str:
+    def save(self, data: bytes) -> str | None:
         raise NotImplementedError
 
     @abstractmethod
-    def delete(self, storage_key: str) -> None:
+    def delete(self, storage_key: str | None) -> None:
         raise NotImplementedError
+
+
+class NoneFileStorage(FileStorage):
+    def save(self, data: bytes) -> str | None:
+        return None
+
+    def delete(self, storage_key: str | None) -> None:
+        pass
 
 
 class LocalFileStorage(FileStorage):
@@ -112,6 +120,8 @@ class S3FileStorage(FileStorage):
 
 
 def create_file_storage(settings: Settings) -> FileStorage:
+    if settings.file_storage_backend == "none":
+        return NoneFileStorage()
     if settings.file_storage_backend == "local":
         return LocalFileStorage(settings.upload_directory)
 

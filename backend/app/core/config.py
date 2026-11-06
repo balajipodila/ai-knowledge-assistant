@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     jwt_secret_key: SecretStr | None = None
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0, le=1440)
-    file_storage_backend: Literal["local", "s3"] = "local"
+    file_storage_backend: Literal["none", "local", "s3"] = "local"
     upload_directory: Path = ROOT_DIR / ".local" / "uploads"
     s3_endpoint_url: str | None = None
     s3_bucket: str | None = None

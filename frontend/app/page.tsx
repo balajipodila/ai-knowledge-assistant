@@ -82,9 +82,7 @@ export default function Home() {
           </p>
           <LandingActions />
           <p className="hero-disclosure">
-            Privacy note: text extracted from uploaded PDFs is sent to the
-            Google Gemini API to create embeddings. When you ask a question,
-            retrieved passages are also sent to Gemini to draft an answer.
+            We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
           </p>
         </div>
 

@@ -41,13 +41,15 @@ workers or replicas and is cleared when the process restarts.
 ## Technology
 
 - Backend: Python 3.12, FastAPI, Pydantic Settings, SQLAlchemy, Alembic.
-- Data: PostgreSQL, pgvector, and local file storage for uploaded PDFs.
+- Data: PostgreSQL, pgvector, and optional file storage (`FILE_STORAGE_BACKEND=none`, `local`, or `s3`). We do not keep your original PDF file.
 - AI: Google Gemini embeddings and text generation, accessed through replaceable
   client interfaces. Automated tests use fake clients.
 - Frontend: Next.js App Router, React, TypeScript, and Tailwind CSS.
 - Tests and checks: pytest, Vitest, Testing Library, ESLint, TypeScript, and
   Next.js production build.
 - CI and containers: GitHub Actions and digest-pinned Docker base images.
+
+> **Privacy Note**: We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
 
 ## Run locally on Windows (without Docker)
 

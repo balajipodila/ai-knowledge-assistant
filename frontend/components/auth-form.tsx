@@ -116,6 +116,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
             ? "Use a valid email address and a password between 12 and 128 characters."
             : "Sign in to access your documents and cited chat."}
         </p>
+        {isSignup && (
+          <p className="auth-help mt-2 text-xs">
+            We do not keep your original PDF file. We store extracted text passages and numeric embeddings so we can search them, until you delete the document. Text from your documents is sent to the Google Gemini API to create embeddings and answers. Do not upload sensitive, confidential or personal documents.
+          </p>
+        )}
         {expiredNotice && (
           <p className="notice notice-info auth-notice" role="status">
             <FormStatusIcon kind="info" />

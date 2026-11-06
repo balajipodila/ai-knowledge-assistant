@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.core.config import Settings
 from app.services.storage import (
     LocalFileStorage,
+    NoneFileStorage,
     S3FileStorage,
     create_file_storage,
 )
@@ -150,3 +151,17 @@ def test_s3_storage_rejects_invalid_endpoint_without_exposing_credentials() -> N
             S3_ACCESS_KEY_ID=" ",
             S3_SECRET_ACCESS_KEY="test-secret-key",
         )
+
+
+def test_none_file_storage_discards_file() -> None:
+    storage = NoneFileStorage()
+    assert storage.save(b"pdf content") is None
+    storage.delete(None)
+    storage.delete("some-key.pdf")
+
+
+def test_storage_factory_creates_none_storage() -> None:
+    settings = Settings(_env_file=None, file_storage_backend="none")
+    storage = create_file_storage(settings)
+    assert isinstance(storage, NoneFileStorage)
+
