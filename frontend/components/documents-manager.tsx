@@ -12,6 +12,7 @@ import {
 
 import { ApiError, apiRequest } from "@/lib/api";
 import type { DocumentItem, DocumentUploadResponse } from "@/lib/types";
+import { ColdStartStatus } from "./cold-start-status";
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024; // Mirrors the backend default in app/core/config.py.
 const DOCUMENT_UPLOAD_TIMEOUT_MS = 120_000;
@@ -379,9 +380,9 @@ export function DocumentsManager() {
         )}
 
         {isLoading && documents.length === 0 && (
-          <p className="helper-text mt-5" role="status">
+          <ColdStartStatus className="helper-text mt-5">
             Loading your documents…
-          </p>
+          </ColdStartStatus>
         )}
         {listError && (
           <p className="notice notice-error mt-5 text-sm" role="alert">

@@ -11,6 +11,7 @@ import {
 
 import { ApiError, apiRequest } from "@/lib/api";
 import type { ChatResponse, Citation, DocumentItem } from "@/lib/types";
+import { ColdStartStatus } from "./cold-start-status";
 
 const CHAT_MAX_QUESTION_CHARS = 2000;
 const CHAT_REQUEST_TIMEOUT_MS = 45_000;
@@ -400,9 +401,9 @@ export function ChatInterface() {
           )}
         </div>
         {documentsLoading && (
-          <p className="helper-text mt-3 text-sm" role="status">
+          <ColdStartStatus className="helper-text mt-3 text-sm">
             Loading ready documents…
-          </p>
+          </ColdStartStatus>
         )}
         {documentsError && (
           <div className="mt-3" role="alert">

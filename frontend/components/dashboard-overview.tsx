@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ApiError, apiRequest } from "@/lib/api";
 import type { DocumentItem } from "@/lib/types";
+import { ColdStartStatus } from "./cold-start-status";
 
 function statusKind(status: string): "info" | "success" | "error" | "warning" {
   switch (status) {
@@ -119,9 +120,9 @@ export function DashboardOverview() {
       </nav>
 
       {isLoading && documents.length === 0 && (
-        <p className="helper-text dashboard-loading" role="status">
+        <ColdStartStatus className="helper-text dashboard-loading">
           Loading your dashboard…
-        </p>
+        </ColdStartStatus>
       )}
       {error && (
         <div className="notice notice-error dashboard-error" role="alert">
