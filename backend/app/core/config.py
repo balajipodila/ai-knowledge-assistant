@@ -42,8 +42,12 @@ class Settings(BaseSettings):
     s3_connect_timeout_seconds: float = Field(default=5.0, gt=0, le=60)
     s3_read_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
     s3_max_attempts: int = Field(default=3, ge=1, le=10)
-    s3_request_checksum_calculation: str = "when_supported"
-    s3_response_checksum_validation: str = "when_required"
+    s3_request_checksum_calculation: Literal["when_supported", "when_required"] = (
+        "when_required"
+    )
+    s3_response_checksum_validation: Literal["when_supported", "when_required"] = (
+        "when_required"
+    )
     max_upload_size_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
     max_pdf_pages: int = Field(default=200, gt=0)
     chunk_size: int = Field(default=900, ge=100, le=4000)

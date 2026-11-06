@@ -120,6 +120,9 @@ def test_storage_factory_creates_s3_storage_without_cloud_calls(
     assert client_arguments["region_name"] == "auto"
     assert client_arguments["aws_access_key_id"] == "test-access-key"
     assert client_arguments["aws_secret_access_key"] == "test-secret-key"
+    config = client_arguments["config"]
+    assert config.request_checksum_calculation == "when_required"
+    assert config.response_checksum_validation == "when_required"
 
 
 def test_s3_storage_requires_complete_configuration() -> None:

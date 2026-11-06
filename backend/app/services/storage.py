@@ -69,7 +69,7 @@ class S3FileStorage(FileStorage):
         connect_timeout: float = 5.0,
         read_timeout: float = 30.0,
         max_attempts: int = 3,
-        request_checksum_calculation: str = "when_supported",
+        request_checksum_calculation: str = "when_required",
         response_checksum_validation: str = "when_required",
         client: S3Client | None = None,
     ) -> None:
