@@ -7,6 +7,15 @@ with page-level citations. It uses retrieval-augmented generation (RAG): the
 backend searches the user's own document chunks and gives those passages to a
 language model as the only source for an answer.
 
+## Production launch (manual)
+
+1. Create a separate Neon production project (not a branch of the test project).
+2. From your laptop, apply migrations with the direct URL (see runbook) and verify `alembic current` = `0004`.
+3. Set Render backend secrets (`DATABASE_URL`, `JWT_SECRET_KEY`, `GEMINI_API_KEY`, `CORS_ORIGINS`).
+4. Set Vercel `NEXT_PUBLIC_API_URL` to the Render backend URL, build, and copy the exact Vercel domain back into Render `CORS_ORIGINS`.
+5. Seed the demo (`seed_demo.py`), put the printed `document.id` into `DEMO_DOCUMENT_ID`, then set `DEMO_MODE=true`.
+6. Walk the full launch checklist in `docs/production-runbook.md` before announcing the URL.
+
 ## What is implemented
 
 - Signup, login, logout, and protected pages.
