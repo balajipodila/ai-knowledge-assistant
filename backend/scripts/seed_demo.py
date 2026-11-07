@@ -65,8 +65,16 @@ def main() -> None:
             )
         )
         if existing is not None:
-            print(f"Demo document already exists: {existing.id}")
-            return
+            if existing.status == "ready":
+                print(f"Demo document already exists: {existing.id}")
+                return
+            else:
+                print(f"Removing incomplete/failed demo document: {existing.id}")
+                storage = create_file_storage(settings)
+                if existing.storage_key:
+                    storage.delete(existing.storage_key)
+                session.delete(existing)
+                session.commit()
 
         client = get_embedding_client(settings)
         document, _, _ = DocumentIngestionService(
