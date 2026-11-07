@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f4f9fc",
+  themeColor: "#0a1628",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -34,6 +34,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to main content
         </a>
         <ThemeColorMeta />
+        <div className="cloud-layer" aria-hidden="true" />
+        <div className="lightning-flash" aria-hidden="true" />
         <AuthProvider>
           <AppShell>{children}</AppShell>
         </AuthProvider>

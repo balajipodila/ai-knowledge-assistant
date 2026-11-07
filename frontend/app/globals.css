@@ -1,55 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
-  --forest-950: #f4f9fc;
-  --forest-900: #e6f2f8;
-  --forest-800: #d0e6f0;
-  --moss-700: #1e6aa8;
-  --moss-600: #2f8fd1;
-  --moss-500: #7cc3e8;
-  --cream-100: #0f3d5c;
-  --cream-200: #1e6aa8;
-  --sage: #8fc3d9;
-  --sage-light: #d9eef8;
-  --text-primary: #082f49;
-  --text-muted: #3a5f74;
+  color-scheme: dark;
+  --forest-950: #0a1628;
+  --forest-900: #101f38;
+  --forest-800: #1a2f4e;
+  --moss-700: #3b82f6;
+  --moss-600: #60a5fa;
+  --moss-500: #93c5fd;
+  --cream-100: #e0e7ff;
+  --cream-200: #93c5fd;
+  --sage: #7ea8c4;
+  --sage-light: #c7ddf2;
+  --text-primary: #e8f0fe;
+  --text-muted: #b3c6dc;
   --text-subtle: var(--sage);
   --gold: #f2c94c;
-  --gold-500: #e0b030;
-  --gold-light: #fcefc0;
-  --status-error: #b91c1c;
-  --status-success: #2e7a5a;
-  --status-warning: #8a6d2b;
-  --status-info: #1e6aa8;
-  --metallic-gradient: linear-gradient(110deg, #f2c94c, #2f8fd1, #7cc3e8);
-  --metallic-text-gradient: linear-gradient(105deg, #082f49, #2f8fd1);
-  --danger-button-text: #ffffff;
-  --danger-button-fill: var(--status-error);
-  --success-fill: #d6ece8;
-  --warning-fill: #fbf0c4;
-  --info-fill: #d6e9f4;
-  --error-fill: #f3d5cf;
+  --gold-500: #facc15;
+  --gold-light: #fef3c7;
+  --status-error: #fca5a5;
+  --status-success: #86efac;
+  --status-warning: #fde047;
+  --status-info: #93c5fd;
+  --metallic-gradient: linear-gradient(110deg, #f2c94c, #60a5fa, #93c5fd);
+  --metallic-text-gradient: linear-gradient(105deg, #e0e7ff, #60a5fa);
+  --danger-button-text: #0a1628;
+  --danger-button-fill: #fca5a5;
+  --success-fill: #164e3a;
+  --warning-fill: #4f3a0a;
+  --info-fill: #1e3a5f;
+  --error-fill: #4f1d1d;
   --border-glass: var(--cream-200);
   --border-strong: var(--cream-100);
-  --border-subtle: rgba(190, 224, 245, 0.6);
-  --glass-fill: rgba(255, 255, 255, 0.58);
-  --glass-header: rgba(244, 249, 252, 0.8);
-  --glass-control: rgba(255, 255, 255, 0.62);
-  --glass-node: rgba(124, 195, 232, 0.36);
-  --glass-citation: rgba(242, 201, 76, 0.26);
-  --glass-step: rgba(47, 143, 209, 0.3);
-  --glow-warm: rgba(124, 195, 232, 0.3);
-  --glow-warm-strong: rgba(47, 143, 209, 0.36);
-  --star-silver: rgba(255, 255, 255, 0.55);
-  --star-muted: rgba(143, 195, 217, 0.42);
-  --highlight-inner: rgba(255, 255, 255, 0.72);
-  --glow-button: rgba(47, 143, 209, 0.28);
-  --glow-button-hover: rgba(47, 143, 209, 0.4);
+  --border-subtle: rgba(147, 197, 253, 0.28);
+  --glass-fill: rgba(16, 31, 56, 0.52);
+  --glass-header: rgba(10, 22, 40, 0.72);
+  --glass-control: rgba(26, 47, 78, 0.55);
+  --glass-node: rgba(59, 130, 246, 0.38);
+  --glass-citation: rgba(242, 201, 76, 0.28);
+  --glass-step: rgba(96, 165, 250, 0.32);
+  --glow-warm: rgba(96, 165, 250, 0.32);
+  --glow-warm-strong: rgba(59, 130, 246, 0.42);
+  --star-silver: rgba(224, 231, 255, 0.45);
+  --star-muted: rgba(147, 197, 253, 0.32);
+  --highlight-inner: rgba(255, 255, 255, 0.09);
+  --glow-button: rgba(59, 130, 246, 0.3);
+  --glow-button-hover: rgba(59, 130, 246, 0.44);
   --border-danger: var(--status-error);
   --border-contrast: var(--cream-100);
   --border-contrast-strong: var(--text-primary);
-  --shadow-deep: rgba(8, 47, 73, 0.16);
+  --shadow-deep: rgba(2, 6, 23, 0.68);
   --focus-ring: var(--gold-light);
   --danger-text: var(--status-error);
   --danger-fill: var(--error-fill);
@@ -70,9 +70,9 @@
   --indigo-button-hover: var(--gold-light);
   --indigo-border: var(--gold);
   --cyan: var(--sage-light);
-  --nebula-violet: rgba(47, 143, 209, 0.22);
-  --nebula-cyan: rgba(124, 195, 232, 0.26);
-  --nebula-magenta: rgba(242, 201, 76, 0.18);
+  --nebula-violet: rgba(59, 130, 246, 0.28);
+  --nebula-cyan: rgba(96, 165, 250, 0.24);
+  --nebula-magenta: rgba(242, 201, 76, 0.14);
   --glow-cyan: var(--glow-warm);
   --border-cyan: var(--sage);
   --border-violet: var(--gold);
@@ -97,13 +97,12 @@ body {
   min-height: 100%;
   margin: 0;
   color: var(--text-primary);
-  background-color: var(--forest-950);
-  /* Beach sky → sand gradient */
+  background-color: #0a1628;
   background-image:
-    linear-gradient(180deg, #bfe6f8 0%, #e8f5fb 42%, #fdf7e8 78%, #ffffff 100%),
     radial-gradient(circle, var(--star-silver) 1px, transparent 1.5px),
-    radial-gradient(circle, var(--star-muted) 1px, transparent 1.5px);
-  background-size: auto, 83px 83px, 127px 127px;
+    radial-gradient(circle, var(--star-muted) 1px, transparent 1.5px),
+    linear-gradient(180deg, #0a1628 0%, #101f38 48%, #1a2f4e 82%, #101f38 100%);
+  background-size: 83px 83px, 127px 127px, auto;
   font-family: var(--font-cosmos), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
 }
@@ -115,29 +114,78 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 15% 14%, rgba(124, 195, 232, 0.22), transparent 30rem),
-    radial-gradient(ellipse at 84% 18%, rgba(242, 201, 76, 0.16), transparent 26rem),
-    radial-gradient(ellipse at 50% 92%, rgba(47, 143, 209, 0.16), transparent 34rem);
-  animation: sea-drift 24s ease-in-out infinite alternate;
+    radial-gradient(ellipse at 18% 12%, rgba(59, 130, 246, 0.28), transparent 30rem),
+    radial-gradient(ellipse at 84% 22%, rgba(96, 165, 250, 0.22), transparent 26rem),
+    radial-gradient(ellipse at 50% 88%, rgba(26, 47, 78, 0.4), transparent 32rem);
+  animation: storm-drift 20s ease-in-out infinite alternate;
 }
 
-/* Animated waves at the bottom of the viewport */
+/* Animated storm rain streaks falling across the viewport */
 body::after {
   content: "";
   position: fixed;
-  left: -10%;
-  right: -10%;
-  bottom: 0;
-  height: 18vh;
-  z-index: 1;
+  inset: -20% 0 0 0;
+  z-index: -1;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.32;
   background:
-    radial-gradient(ellipse at 20% 40%, rgba(124, 195, 232, 0.5), transparent 60%),
-    radial-gradient(ellipse at 80% 30%, rgba(47, 143, 209, 0.4), transparent 55%);
-  background-size: 40vw 18vh, 36vw 16vh;
-  animation: sea-wave 10s ease-in-out infinite alternate;
-  filter: blur(1px);
+    repeating-linear-gradient(
+      105deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(147, 197, 253, 0.14) 18px,
+      rgba(147, 197, 253, 0.14) 19px
+    );
+  animation: storm-rain 0.9s linear infinite;
+}
+
+/* Occasional storm clouds passing */
+.cloud-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 20% 18%, rgba(16, 31, 56, 0.55), transparent 28rem),
+    radial-gradient(ellipse at 70% 10%, rgba(26, 47, 78, 0.5), transparent 30rem),
+    radial-gradient(ellipse at 52% 24%, rgba(59, 130, 246, 0.18), transparent 30rem);
+  animation: storm-clouds 30s ease-in-out infinite alternate;
+}
+
+/* Distant lightning flash every few seconds */
+.lightning-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(circle at 72% 8%, rgba(254, 243, 199, 0.9), transparent 42%);
+  opacity: 0;
+  animation: storm-lightning 7s steps(1, end) infinite;
+}
+
+@keyframes storm-rain {
+  0% { transform: translateY(-10%); opacity: 0.28; }
+  100% { transform: translateY(10%); opacity: 0.36; }
+}
+
+@keyframes storm-clouds {
+  0% { transform: translateX(-3%) scale(1); opacity: 0.85; }
+  50% { transform: translateX(3%) scale(1.04); opacity: 1; }
+  100% { transform: translateX(-2%) scale(1.02); opacity: 0.9; }
+}
+
+@keyframes storm-drift {
+  0% { transform: translate3d(-2%, -1%, 0) scale(1); opacity: 0.9; }
+  50% { transform: translate3d(2%, 1%, 0) scale(1.06); opacity: 1; }
+  100% { transform: translate3d(-1%, 2%, 0) scale(1.03); opacity: 0.92; }
+}
+
+@keyframes storm-lightning {
+  0%, 90%, 100% { opacity: 0; }
+  90.5% { opacity: 0.85; }
+  91% { opacity: 0.1; }
+  91.5% { opacity: 0.7; }
+  92% { opacity: 0; }
 }
 
 a {
