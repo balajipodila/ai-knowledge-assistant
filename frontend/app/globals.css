@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
-  --forest-950: #0b1710;
-  --forest-900: #12261a;
-  --forest-800: #1a3523;
-  --moss-700: #2f5d3a;
-  --moss-600: #3f7a4d;
-  --moss-500: #5a8f5a;
-  --cream-100: #f3ead9;
-  --cream-200: #e9ddc6;
-  --sage: #b9c9a8;
-  --sage-light: #d5e2c6;
-  --text-primary: #f3ead9;
-  --text-muted: #d9d2c2;
+  color-scheme: light;
+  --forest-950: #f8f3e8;
+  --forest-900: #f0ead8;
+  --forest-800: #e4dcc0;
+  --moss-700: #6b8e5a;
+  --moss-600: #86a873;
+  --moss-500: #a8c49a;
+  --cream-100: #3f4a2e;
+  --cream-200: #5a6b46;
+  --sage: #8fa48a;
+  --sage-light: #c9d6c0;
+  --text-primary: #1a3523;
+  --text-muted: #4a5a44;
   --text-subtle: var(--sage);
-  --gold: #d4af37;
-  --gold-500: #c9a227;
-  --gold-light: #f1d27a;
-  --status-error: #f4a89b;
-  --status-success: #a8e6b0;
-  --status-warning: #f5d076;
-  --status-info: #b7d8c8;
-  --metallic-gradient: linear-gradient(110deg, var(--gold-light), var(--gold), var(--moss-600));
-  --metallic-text-gradient: linear-gradient(105deg, var(--cream-100), var(--gold-light));
-  --danger-button-text: var(--forest-950);
+  --gold: #c9a227;
+  --gold-500: #d4af37;
+  --gold-light: #b7951e;
+  --status-error: #b91c1c;
+  --status-success: #2e7a3e;
+  --status-warning: #92600a;
+  --status-info: #1f5a44;
+  --metallic-gradient: linear-gradient(110deg, #d4af37, #c9a227, #86a873);
+  --metallic-text-gradient: linear-gradient(105deg, #1a3523, #c9a227);
+  --danger-button-text: #ffffff;
   --danger-button-fill: var(--status-error);
-  --success-fill: #164229;
-  --warning-fill: #4f3a0e;
-  --info-fill: #1f3f34;
-  --error-fill: #4a2320;
+  --success-fill: #eaefda;
+  --warning-fill: #f5e6c2;
+  --info-fill: #dae8d0;
+  --error-fill: #f3d5cf;
   --border-glass: var(--cream-200);
   --border-strong: var(--cream-100);
   --border-subtle: rgba(243, 234, 217, 0.35);
-  --glass-fill: rgba(18, 38, 26, 0.55);
-  --glass-header: rgba(11, 23, 16, 0.72);
-  --glass-control: rgba(26, 53, 35, 0.55);
-  --glass-node: rgba(47, 93, 58, 0.45);
-  --glass-citation: rgba(201, 162, 39, 0.32);
-  --glass-step: rgba(90, 143, 90, 0.42);
+  --glass-fill: rgba(255, 255, 255, 0.55);
+  --glass-header: rgba(248, 243, 232, 0.78);
+  --glass-control: rgba(255, 255, 255, 0.62);
+  --glass-node: rgba(168, 196, 154, 0.48);
+  --glass-citation: rgba(212, 175, 55, 0.28);
+  --glass-step: rgba(134, 168, 115, 0.42);
   --glow-warm: rgba(212, 175, 55, 0.18);
   --glow-warm-strong: rgba(212, 175, 55, 0.28);
   --star-silver: rgba(243, 234, 217, 0.28);
@@ -49,7 +49,7 @@
   --border-danger: var(--status-error);
   --border-contrast: var(--cream-100);
   --border-contrast-strong: var(--text-primary);
-  --shadow-deep: rgba(6, 14, 9, 0.62);
+  --shadow-deep: rgba(90, 107, 70, 0.18);
   --focus-ring: var(--gold-light);
   --danger-text: var(--status-error);
   --danger-fill: var(--error-fill);
@@ -304,7 +304,7 @@ input {
 .upload-dropzone-active {
   border-style: solid;
   border-color: var(--focus-ring);
-  background: var(--forest-800);
+  background: var(--glass-step);
   transform: translateY(-1px);
 }
 
@@ -569,14 +569,14 @@ input {
 .button-primary {
   border: 1px solid var(--gold);
   color: #1a1a12;
-  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 55%, var(--moss-600) 115%);
-  box-shadow: 0 10px 28px var(--glow-button);
+  background: linear-gradient(135deg, #f3ead9 0%, var(--gold-light) 45%, var(--gold) 85%);
+  box-shadow: 0 8px 22px rgba(201, 162, 39, 0.28);
 }
 
 .button-primary:hover {
   color: #1a1a12;
-  background: linear-gradient(135deg, var(--cream-100) 0%, var(--gold-light) 55%, var(--moss-500) 115%);
-  box-shadow: 0 12px 36px var(--glow-button-hover);
+  background: linear-gradient(135deg, #fffdf5 0%, #f1d27a 50%, #c9a227 90%);
+  box-shadow: 0 10px 28px rgba(201, 162, 39, 0.34);
   transform: translateY(-1px);
 }
 
@@ -676,19 +676,19 @@ input {
 }
 
 .input-shell {
-  border: 1px solid var(--cream-100);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   color: var(--text-primary);
-  background: var(--forest-950);
+  background: var(--glass-control);
 }
 
 .input-shell::placeholder {
-  color: var(--cream-100);
+  color: var(--text-primary);
   opacity: 0.9;
 }
 
 .metallic-heading {
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 @supports ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -758,7 +758,7 @@ input {
 
 .eyebrow {
   margin: 0 0 1.15rem;
-  color: var(--cream-100);
+  color: var(--text-primary);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -1332,7 +1332,7 @@ input {
 
 .button-primary:focus-visible,
 .button-danger:focus-visible {
-  outline-color: var(--cream-100);
+  outline-color: var(--text-primary);
 }
 
 .glass-blur {
@@ -1360,7 +1360,7 @@ input {
   .delete-dialog,
   .chat-composer,
   .chat-composer-panel {
-    background: var(--forest-900);
+    background: var(--glass-node);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -1381,7 +1381,7 @@ input {
 }
 
 .section-subheading {
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .field-label {
@@ -1390,13 +1390,13 @@ input {
 
 .citation-link,
 .auth-switch a {
-  color: var(--cream-100);
+  color: var(--text-primary);
   text-decoration-color: var(--sage);
 }
 
 .citation-link:hover,
 .auth-switch a:hover {
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .site-header .button-primary {
@@ -1409,27 +1409,27 @@ input {
 
 .auth-card h1,
 .section-heading {
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .auth-field input,
 .file-input,
 .chat-composer textarea {
-  border: 1px solid var(--cream-100);
+  border: 1px solid var(--border-strong);
   color: var(--text-primary);
-  background: var(--forest-950);
+  background: var(--glass-control);
 }
 
 .auth-field input:focus-visible,
 .file-input:focus-visible,
 .chat-composer textarea:focus-visible,
 .input-shell:focus-visible {
-  outline-color: var(--cream-100);
+  outline-color: var(--text-primary);
 }
 
 .auth-field input::placeholder,
 .chat-composer textarea::placeholder {
-  color: var(--cream-100);
+  color: var(--text-primary);
   opacity: 0.9;
 }
 
@@ -1478,7 +1478,7 @@ input {
 }
 
 .document-card-highlight {
-  outline: 2px solid var(--cream-100);
+  outline: 2px solid var(--gold-light);
   outline-offset: 2px;
 }
 
@@ -1490,15 +1490,15 @@ input {
 }
 
 .document-choice:hover {
-  background: var(--forest-800);
+  background: var(--glass-step);
 }
 
 .document-checkbox {
-  accent-color: var(--cream-100);
+  accent-color: var(--text-primary);
 }
 
 .delete-dialog {
-  border: 1px solid var(--cream-100);
+  border: 1px solid var(--border-strong);
   color: var(--text-primary);
   background: var(--glass-fill);
 }
@@ -1514,7 +1514,7 @@ input {
 }
 
 .user-message-label {
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .answer-text {
@@ -1562,7 +1562,7 @@ input {
 
 .not-found-card .page-title {
   margin: 0.6rem 0 0;
-  color: var(--cream-100);
+  color: var(--text-primary);
   font-size: clamp(2rem, 6vw, 3.25rem);
   font-weight: 750;
   letter-spacing: -0.035em;
@@ -1638,8 +1638,8 @@ input {
 
 .document-chip:hover,
 .document-chip:has(.document-checkbox:checked) {
-  border-color: var(--cream-100);
-  background: var(--forest-800);
+  border-color: var(--text-primary);
+  background: var(--glass-step);
 }
 
 .document-chip:focus-within {
@@ -1697,7 +1697,7 @@ input {
   place-items: center;
   border: 1px solid var(--border-strong);
   border-radius: 50%;
-  color: var(--cream-100);
+  color: var(--text-primary);
   background: var(--glass-control);
   font-size: 1.5rem;
   font-weight: 700;
@@ -1797,7 +1797,7 @@ input {
   min-height: 5.5rem;
   place-items: center;
   overflow: hidden;
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .scene-svg {
@@ -1853,7 +1853,7 @@ input {
   inset: 0;
   width: 100%;
   height: 100%;
-  color: var(--cream-100);
+  color: var(--text-primary);
 }
 
 .constellation-lines {
@@ -1887,7 +1887,7 @@ input {
   border-radius: 999px;
   padding: 0.35rem 0.6rem;
   color: var(--text-primary);
-  background: var(--forest-900);
+  background: var(--glass-node);
   font-size: 0.72rem;
   opacity: 1;
 }
@@ -1903,7 +1903,7 @@ input {
 }
 
 .hero-demo-answer span {
-  color: var(--cream-100);
+  color: var(--text-primary);
   font-weight: 800;
 }
 
@@ -1935,7 +1935,7 @@ input {
   min-height: 5.5rem;
   border: 1px solid var(--sage);
   border-radius: var(--radius-control);
-  background: var(--forest-950);
+  background: var(--glass-control);
 }
 
 .step-card .scene-shape,
