@@ -189,6 +189,7 @@ def test_upload_and_delete_use_the_configured_storage_factory(
 def test_document_cap_allows_duplicate_but_rejects_a_new_document(
     document_client: dict[str, Any],
 ) -> None:
+    document_client["settings"].demo_mode = False
     document_client["settings"].max_documents_per_user = 1
     first_pdf = _pdf_bytes(["First document contents."])
     second_pdf = _pdf_bytes(["Different document contents."])

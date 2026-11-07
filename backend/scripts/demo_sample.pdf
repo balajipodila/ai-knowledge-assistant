@@ -1,36 +1,68 @@
-%PDF-1.4
+%PDF-1.3
+%“Œ‹ž ReportLab Generated PDF document (opensource)
 1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
+<<
+/F1 2 0 R
+>>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<<
+/BaseFont /Helvetica /Encoding /WinAnsiEncoding /Name /F1 /Subtype /Type1 /Type /Font
+>>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+<<
+/Contents 7 0 R /MediaBox [ 0 0 595.2756 841.8898 ] /Parent 6 0 R /Resources <<
+/Font 1 0 R /ProcSet [ /PDF /Text /ImageB /ImageC /ImageI ]
+>> /Rotate 0 /Trans <<
+
+>> 
+  /Type /Page
+>>
 endobj
 4 0 obj
-<< /Length 86 >>
-stream
-BT
-/F1 18 Tf
-72 720 Td
-(AI Knowledge Assistant public demo sample.) Tj
-ET
-endstream
+<<
+/PageMode /UseNone /Pages 6 0 R /Type /Catalog
+>>
 endobj
 5 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<<
+/Author (anonymous) /CreationDate (D:20261107101318+05'00') /Creator (anonymous) /Keywords () /ModDate (D:20261107101318+05'00') /Producer (ReportLab PDF Library - \(opensource\)) 
+  /Subject (unspecified) /Title (untitled) /Trapped /False
+>>
+endobj
+6 0 obj
+<<
+/Count 1 /Kids [ 3 0 R ] /Type /Pages
+>>
+endobj
+7 0 obj
+<<
+/Filter [ /ASCII85Decode /FlateDecode ] /Length 139
+>>
+stream
+Gap@E0a`Ou'L[:Dn]I69pdI`UTFbT.048lHb,u)PjSH"lApD;a(a0?NMk,JuH.7FVkSM@)*,VW2$G65dB,6r1Na)&54YK$8qS?!Q5PhLQ2qIq;a,]#d"lHoARNt?MoR:*Y*D'9Q6N~>endstream
 endobj
 xref
-0 6
+0 8
 0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000241 00000 n 
-0000000364 00000 n 
+0000000061 00000 n 
+0000000092 00000 n 
+0000000199 00000 n 
+0000000402 00000 n 
+0000000470 00000 n 
+0000000731 00000 n 
+0000000790 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<<
+/ID 
+[<9e7693220c1213c5ec9230311f57e737><9e7693220c1213c5ec9230311f57e737>]
+% ReportLab generated PDF document -- digest (opensource)
+
+/Info 5 0 R
+/Root 4 0 R
+/Size 8
+>>
 startxref
-434
+1019
 %%EOF
