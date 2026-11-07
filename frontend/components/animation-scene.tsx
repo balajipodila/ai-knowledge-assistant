@@ -28,18 +28,27 @@ function SceneArtwork({ scene }: { scene: AnimationSceneName }) {
     return (
       <>
         <svg className="scene-svg hero-constellation-svg" viewBox="0 0 360 250">
-          <g className="constellation-lines" fill="none" stroke="currentColor">
-            <path d="M56 75 113 52 159 99 218 63 286 91M83 171l76-72 60 79 67-87" />
-            <path d="m113 52 105 11m-59 36 68 51m-143 21-27-96" />
+          <g className="scene-paper">
+            <rect x="34" y="18" width="136" height="182" rx="6" />
+            <line x1="56" y1="42" x2="148" y2="42" />
+            <line x1="56" y1="66" x2="138" y2="66" />
+            <line x1="56" y1="90" x2="142" y2="90" />
+            <line x1="56" y1="114" x2="134" y2="114" />
+            <line x1="56" y1="138" x2="148" y2="138" />
+            <line x1="56" y1="162" x2="130" y2="162" />
+            <circle cx="188" cy="58" r="5" />
           </g>
-          <g className="constellation-dots">
-            <circle cx="56" cy="75" r="3" /><circle cx="113" cy="52" r="4" />
-            <circle cx="159" cy="99" r="5" /><circle cx="218" cy="63" r="3" />
-            <circle cx="286" cy="91" r="4" /><circle cx="83" cy="171" r="3" />
-            <circle cx="218" cy="178" r="4" /><circle cx="285" cy="91" r="2" />
-            <circle cx="244" cy="142" r="3" /><circle cx="130" cy="154" r="2" />
+          <g className="scene-paper scene-paper--offset">
+            <rect x="180" y="38" width="136" height="182" rx="6" />
+            <line x1="202" y1="62" x2="294" y2="62" />
+            <line x1="202" y1="86" x2="284" y2="86" />
+            <line x1="202" y1="110" x2="288" y2="110" />
+            <line x1="202" y1="134" x2="280" y2="134" />
+            <line x1="202" y1="158" x2="294" y2="158" />
+            <line x1="202" y1="182" x2="272" y2="182" />
+            <path d="M196 48h-12v14" />
           </g>
-          <circle className="search-pulse" cx="159" cy="99" r="18" />
+          <circle className="search-pulse" cx="98" cy="168" r="16" />
         </svg>
         <span className="hero-demo-question">Example question · “What is machine learning?”</span>
         <span className="hero-demo-answer">Example answer <span aria-hidden="true">[1]</span></span>
